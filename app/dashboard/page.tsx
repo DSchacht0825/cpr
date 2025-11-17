@@ -12,6 +12,7 @@ interface Application {
   phone_number: string;
   property_address: string;
   property_county: string;
+  property_zip: string;
   status: string;
   has_auction_date: boolean;
   auction_date?: string;
@@ -41,8 +42,30 @@ export default function DashboardPage() {
   });
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [countyFilter, setCountyFilter] = useState<string>("all");
+  const [zipFilter, setZipFilter] = useState<string[]>([]);
+  const [customZip, setCustomZip] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // San Diego County ZIP codes
+  const sanDiegoZips = [
+    "91901", "91902", "91905", "91906", "91910", "91911", "91913", "91914", "91915", "91916",
+    "91917", "91931", "91932", "91933", "91934", "91935", "91941", "91942", "91945", "91948",
+    "91950", "91962", "91963", "91977", "91978", "91980", "92003", "92004", "92007", "92008",
+    "92009", "92010", "92011", "92013", "92014", "92018", "92019", "92020", "92021", "92024",
+    "92025", "92026", "92027", "92028", "92029", "92037", "92039", "92040", "92054", "92055",
+    "92056", "92057", "92058", "92059", "92061", "92064", "92065", "92066", "92067", "92068",
+    "92069", "92070", "92071", "92072", "92074", "92075", "92078", "92079", "92081", "92082",
+    "92083", "92084", "92086", "92091", "92092", "92093", "92096", "92101", "92102", "92103",
+    "92104", "92105", "92106", "92107", "92108", "92109", "92110", "92111", "92112", "92113",
+    "92114", "92115", "92116", "92117", "92118", "92119", "92120", "92121", "92122", "92123",
+    "92124", "92126", "92127", "92128", "92129", "92130", "92131", "92132", "92134", "92135",
+    "92136", "92137", "92138", "92139", "92140", "92142", "92145", "92147", "92149", "92150",
+    "92152", "92153", "92154", "92155", "92158", "92159", "92160", "92161", "92163", "92165",
+    "92166", "92167", "92168", "92169", "92170", "92171", "92172", "92173", "92174", "92175",
+    "92176", "92177", "92178", "92179", "92182", "92186", "92187", "92191", "92192", "92193",
+    "92195", "92196", "92197", "92198", "92199"
+  ];
 
   useEffect(() => {
     fetchApplications();
@@ -50,7 +73,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     filterApplications();
-  }, [applications, statusFilter, countyFilter]);
+  }, [applications, statusFilter, countyFilter, zipFilter]);
 
   const fetchApplications = async () => {
     try {
@@ -101,7 +124,32 @@ export default function DashboardPage() {
       filtered = filtered.filter((app) => app.property_county === countyFilter);
     }
 
+    if (zipFilter.length > 0) {
+      filtered = filtered.filter((app) => zipFilter.includes(app.property_zip));
+    }
+
     setFilteredApplications(filtered);
+  };
+
+  const toggleZipFilter = (zip: string) => {
+    setZipFilter((prev) =>
+      prev.includes(zip) ? prev.filter((z) => z !== zip) : [...prev, zip]
+    );
+  };
+
+  const addCustomZip = () => {
+    if (customZip && !zipFilter.includes(customZip)) {
+      setZipFilter([...zipFilter, customZip]);
+      setCustomZip("");
+    }
+  };
+
+  const setSanDiegoFilter = () => {
+    setZipFilter(sanDiegoZips);
+  };
+
+  const clearZipFilter = () => {
+    setZipFilter([]);
   };
 
   const getUniqueCounties = () => {
@@ -224,8 +272,10 @@ export default function DashboardPage() {
 
         {/* Filters */}
         <div className="card mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Filters</h3>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <div>
               <label htmlFor="statusFilter" className="label">
                 Filter by Status
               </label>
@@ -242,7 +292,7 @@ export default function DashboardPage() {
                 <option value="closed">Closed</option>
               </select>
             </div>
-            <div className="flex-1">
+            <div>
               <label htmlFor="countyFilter" className="label">
                 Filter by County
               </label>
@@ -260,17 +310,92 @@ export default function DashboardPage() {
                 ))}
               </select>
             </div>
-            <div className="flex-1 flex items-end">
+            <div className="flex items-end">
               <button
                 onClick={() => {
                   setStatusFilter("all");
                   setCountyFilter("all");
+                  clearZipFilter();
                 }}
                 className="btn-secondary w-full"
               >
-                Clear Filters
+                Clear All Filters
               </button>
             </div>
+          </div>
+
+          {/* ZIP Code Filter */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="label mb-2">
+              Filter by ZIP Code{zipFilter.length > 0 && ` (${zipFilter.length} selected)`}
+            </label>
+
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={setSanDiegoFilter}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  zipFilter.length === sanDiegoZips.length
+                    ? "bg-cyan-600 text-white"
+                    : "bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                }`}
+              >
+                All San Diego ZIPs ({sanDiegoZips.length})
+              </button>
+              <button
+                onClick={clearZipFilter}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Clear ZIP Filter
+              </button>
+            </div>
+
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={customZip}
+                onChange={(e) => setCustomZip(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && addCustomZip()}
+                placeholder="Add custom ZIP code..."
+                className="input-field flex-1"
+                maxLength={5}
+              />
+              <button
+                onClick={addCustomZip}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+
+            {zipFilter.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {zipFilter.map((zip) => (
+                  <span
+                    key={zip}
+                    className="inline-flex items-center gap-1 bg-cyan-100 text-cyan-800 px-3 py-1 rounded-full text-sm font-medium"
+                  >
+                    {zip}
+                    <button
+                      onClick={() => toggleZipFilter(zip)}
+                      className="hover:bg-cyan-200 rounded-full p-0.5 transition-colors"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
