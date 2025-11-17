@@ -62,12 +62,12 @@ body {
   border-radius: 0.5rem;
   outline: none;
   transition: all 0.2s;
+  background-color: white;
 }
 
 .input-field:focus {
-  ring: 2px;
-  ring-color: #0891b2;
-  border-color: transparent;
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
 }
 
 .label {
