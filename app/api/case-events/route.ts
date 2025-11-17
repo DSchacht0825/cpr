@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
       next_steps: body.next_steps || null,
       is_milestone: body.is_milestone || false,
       is_urgent: body.is_urgent || false,
+      latitude: body.latitude || null,
+      longitude: body.longitude || null,
+      location_accuracy: body.location_accuracy || null,
     };
 
     const { data, error } = await supabase

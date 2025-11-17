@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AddNoteModalProps {
   isOpen: boolean;
@@ -19,6 +19,38 @@ export default function AddNoteModal({ isOpen, onClose, onSave, applicantId }: A
   const [isMilestone, setIsMilestone] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [location, setLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+  } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"loading" | "success" | "error" | "denied">("loading");
+
+  // Capture GPS location when modal opens
+  useEffect(() => {
+    if (isOpen && "geolocation" in navigator) {
+      setLocationStatus("loading");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          });
+          setLocationStatus("success");
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "error");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -37,6 +69,9 @@ export default function AddNoteModal({ isOpen, onClose, onSave, applicantId }: A
         next_steps: nextSteps || null,
         is_milestone: isMilestone,
         is_urgent: isUrgent,
+        latitude: location?.latitude || null,
+        longitude: location?.longitude || null,
+        location_accuracy: location?.accuracy || null,
       });
 
       // Reset form
@@ -193,6 +228,42 @@ export default function AddNoteModal({ isOpen, onClose, onSave, applicantId }: A
                 />
                 <span className="text-sm text-gray-700">Mark as urgent</span>
               </label>
+            </div>
+
+            {/* GPS Location Status */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                {locationStatus === "loading" && (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-cyan-600 border-t-transparent rounded-full"></div>
+                    <span className="text-sm text-gray-600">Getting your location...</span>
+                  </>
+                )}
+                {locationStatus === "success" && location && (
+                  <>
+                    <span className="text-green-600">📍</span>
+                    <span className="text-sm text-gray-700">
+                      Location captured (±{Math.round(location.accuracy)}m accuracy)
+                    </span>
+                  </>
+                )}
+                {locationStatus === "denied" && (
+                  <>
+                    <span className="text-yellow-600">⚠️</span>
+                    <span className="text-sm text-gray-600">
+                      Location permission denied - interaction will be saved without GPS
+                    </span>
+                  </>
+                )}
+                {locationStatus === "error" && (
+                  <>
+                    <span className="text-gray-400">📍</span>
+                    <span className="text-sm text-gray-500">
+                      Could not get location - interaction will be saved without GPS
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4 border-t">

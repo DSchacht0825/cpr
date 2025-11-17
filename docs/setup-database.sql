@@ -185,6 +185,11 @@ CREATE TABLE IF NOT EXISTS case_events (
   -- User Tracking
   created_by UUID,
 
+  -- GPS Location Tracking
+  latitude DECIMAL(10, 8),
+  longitude DECIMAL(11, 8),
+  location_accuracy DECIMAL(10, 2),
+
   -- Metadata
   is_milestone BOOLEAN DEFAULT false,
   is_urgent BOOLEAN DEFAULT false

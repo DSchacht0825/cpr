@@ -60,6 +60,9 @@ interface CaseEvent {
   next_steps?: string;
   is_milestone: boolean;
   is_urgent: boolean;
+  latitude?: number;
+  longitude?: number;
+  location_accuracy?: number;
 }
 
 export default function ApplicationDetailPage() {
@@ -599,6 +602,24 @@ export default function ApplicationDetailPage() {
                             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                               <p className="text-sm font-medium text-blue-900 mb-1">Next Steps:</p>
                               <p className="text-sm text-blue-800 whitespace-pre-wrap">{event.next_steps}</p>
+                            </div>
+                          )}
+
+                          {event.latitude && event.longitude && (
+                            <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+                              <span className="text-green-600">📍</span>
+                              <span>
+                                Location: {event.latitude.toFixed(6)}, {event.longitude.toFixed(6)}
+                                {event.location_accuracy && ` (±${Math.round(event.location_accuracy)}m)`}
+                              </span>
+                              <a
+                                href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-cyan-600 hover:text-cyan-700 underline ml-1"
+                              >
+                                View on map
+                              </a>
                             </div>
                           )}
                         </div>
