@@ -1,0 +1,45 @@
+{
+  "name": "Community Property Rescue",
+  "short_name": "CPR",
+  "description": "Restoring hope & dignity in your housing crisis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0891b2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/cpr.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Apply for Assistance",
+      "short_name": "Apply",
+      "description": "Submit a new application",
+      "url": "/apply",
+      "icons": [
+        {
+          "src": "/cpr.png",
+          "sizes": "512x512"
+        }
+      ]
+    },
+    {
+      "name": "Admin Dashboard",
+      "short_name": "Dashboard",
+      "description": "View applications dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/cpr.png",
+          "sizes": "512x512"
+        }
+      ]
+    }
+  ]
+}

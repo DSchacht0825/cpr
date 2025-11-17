@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>community-property-rescue-proposal</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css" />
+</head>
+<body>
+<h1 id="web-application-development-proposal">Web Application
+Development Proposal</h1>
+<h2 id="community-property-rescue">Community Property Rescue</h2>
+<p><strong>Prepared for:</strong> Community Property Rescue
+<strong>Prepared by:</strong> Daniel Schacht <strong>Date:</strong>
+November 7, 2025</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This proposal outlines the development of a custom web application
+for Community Property Rescue, designed to streamline client management,
+service tracking, and reporting. The solution will be built using proven
+modern technologies, following the successful architecture of similar
+nonprofit database applications.</p>
+<hr />
+<h2 id="technical-solution-overview">Technical Solution Overview</h2>
+<h3 id="platform-architecture">Platform Architecture</h3>
+<ul>
+<li><strong>Frontend Framework:</strong> Next.js 15 with React 19</li>
+<li><strong>Programming Language:</strong> TypeScript for type-safe,
+maintainable code</li>
+<li><strong>Styling:</strong> Tailwind CSS 4 for responsive, modern
+UI</li>
+<li><strong>Database:</strong> Supabase (PostgreSQL) with real-time
+capabilities</li>
+<li><strong>Authentication:</strong> Supabase Auth with role-based
+access control</li>
+<li><strong>Hosting:</strong> Vercel (included in monthly support)</li>
+<li><strong>Maps &amp; Geolocation:</strong> Mapbox integration for
+location tracking</li>
+</ul>
+<h3 id="core-features">Core Features</h3>
+<h4 id="client-management-system">1. Client Management System</h4>
+<ul>
+<li>Comprehensive intake forms with demographic data collection</li>
+<li>Client search and filtering capabilities</li>
+<li>Duplicate detection to prevent redundant entries</li>
+<li>Client profile pages with full service history</li>
+<li>Custom client ID generation</li>
+</ul>
+<h4 id="service-encounter-tracking">2. Service Encounter Tracking</h4>
+<ul>
+<li>Date/time stamped service interactions</li>
+<li>Geolocation tracking with interactive maps</li>
+<li>Field worker assignment</li>
+<li>Service type categorization</li>
+<li>Detailed case management notes</li>
+<li>Photo/document attachment capability</li>
+</ul>
+<h4 id="user-management">3. User Management</h4>
+<ul>
+<li>Role-based access control (Admin / Field Worker)</li>
+<li>Secure authentication system</li>
+<li>User activity logging</li>
+<li>Password management and security features</li>
+</ul>
+<h4 id="reporting-analytics">4. Reporting &amp; Analytics</h4>
+<ul>
+<li>Custom report builder</li>
+<li>Data export functionality (CSV/Excel)</li>
+<li>Service encounter heat maps</li>
+<li>Statistical dashboards</li>
+<li>Filterable date ranges and service types</li>
+<li>Grant reporting templates</li>
+</ul>
+<h4 id="mobile-responsive-design">5. Mobile-Responsive Design</h4>
+<ul>
+<li>Progressive Web App (PWA) capabilities</li>
+<li>Works seamlessly on phones, tablets, and desktops</li>
+<li>Offline data entry capabilities</li>
+<li>Touch-optimized interface for field workers</li>
+</ul>
+<hr />
+<h2 id="project-deliverables">Project Deliverables</h2>
+<h3 id="phase-1-discovery-planning-week-1">Phase 1: Discovery &amp;
+Planning (Week 1)</h3>
+<ul>
+<li>Stakeholder interviews to define specific needs</li>
+<li>Database schema design</li>
+<li>UI/UX wireframes and mockups</li>
+<li>Technical architecture documentation</li>
+</ul>
+<h3 id="phase-2-core-development-weeks-2-5">Phase 2: Core Development
+(Weeks 2-5)</h3>
+<ul>
+<li>Database setup and configuration</li>
+<li>User authentication system</li>
+<li>Client intake and management features</li>
+<li>Service encounter tracking system</li>
+<li>Admin dashboard development</li>
+</ul>
+<h3 id="phase-3-advanced-features-weeks-6-7">Phase 3: Advanced Features
+(Weeks 6-7)</h3>
+<ul>
+<li>Custom reporting tools</li>
+<li>Map integration and geolocation</li>
+<li>Data export functionality</li>
+<li>Duplicate detection system</li>
+</ul>
+<h3 id="phase-4-testing-deployment-week-8">Phase 4: Testing &amp;
+Deployment (Week 8)</h3>
+<ul>
+<li>Quality assurance testing</li>
+<li>User acceptance testing</li>
+<li>Staff training documentation</li>
+<li>Production deployment</li>
+<li>Initial data migration (if applicable)</li>
+</ul>
+<hr />
+<h2 id="investment-breakdown">Investment Breakdown</h2>
+<h3 id="one-time-development-cost-7500">One-Time Development Cost:
+<strong>$7,500</strong></h3>
+<p>This includes: - Complete application development - Custom database
+design - User authentication &amp; security - All core features listed
+above - Responsive design for all devices - Initial deployment and setup
+- Staff training materials - 30 days of post-launch support</p>
+<h3 id="monthly-support-maintenance-100month">Monthly Support &amp;
+Maintenance: <strong>$100/month</strong></h3>
+<p>This includes: - <strong>Database hosting and management
+(Supabase)</strong> - <strong>Web application hosting (Vercel)</strong>
+- Database backups and monitoring - Security updates and patches -
+Performance optimization - Bug fixes and minor enhancements - Email
+support - 99.9% uptime guarantee - SSL certificate and security -
+Automatic scaling as your organization grows</p>
+<hr />
+<h2 id="technology-benefits">Technology Benefits</h2>
+<h3 id="why-these-technologies">Why These Technologies?</h3>
+<p><strong>Next.js &amp; React</strong> - Industry-leading web framework
+- Fast, responsive user experience - SEO-friendly for public-facing
+pages - Easy to maintain and extend</p>
+<p><strong>TypeScript</strong> - Reduces bugs through type checking -
+Better code documentation - Easier for future developers to understand -
+Enhanced IDE support</p>
+<p><strong>Supabase (PostgreSQL)</strong> - Enterprise-grade database -
+Real-time data synchronization - Automatic backups - Built-in security
+features - Scales with your needs</p>
+<p><strong>Vercel Hosting</strong> - Global CDN for fast load times -
+Automatic deployments - Zero downtime updates - Built-in analytics -
+Excellent reliability</p>
+<hr />
+<h2 id="timeline">Timeline</h2>
+<p><strong>Total Development Time:</strong> 8 weeks from contract
+signing</p>
+<ul>
+<li>Week 1: Planning &amp; Design</li>
+<li>Weeks 2-7: Development &amp; Testing</li>
+<li>Week 8: Deployment &amp; Training</li>
+</ul>
+<hr />
+<h2 id="support-maintenance">Support &amp; Maintenance</h2>
+<h3 id="whats-included-in-monthly-support">What’s Included in Monthly
+Support:</h3>
+<ul>
+<li>Hosting for both application and database</li>
+<li>Daily automated backups</li>
+<li>Security monitoring and updates</li>
+<li>Performance optimization</li>
+<li>Bug fixes and patches</li>
+<li>Email support (48-hour response time)</li>
+<li>Monthly usage reports</li>
+<li>Database maintenance and optimization</li>
+</ul>
+<h3 id="additional-services-available">Additional Services
+Available:</h3>
+<ul>
+<li>Feature enhancements: $75/hour</li>
+<li>Custom reporting development: $500 per complex report</li>
+<li>Additional training sessions: $150/session</li>
+<li>Data migration assistance: Custom quote</li>
+</ul>
+<hr />
+<h2 id="security-compliance">Security &amp; Compliance</h2>
+<ul>
+<li>SSL encryption for all data transmission</li>
+<li>Password encryption and secure authentication</li>
+<li>Role-based access control</li>
+<li>Regular security audits</li>
+<li>GDPR-compliant data handling</li>
+<li>Automatic backup retention (30 days)</li>
+<li>Audit logging for sensitive operations</li>
+</ul>
+<hr />
+<h2 id="warranty-guarantees">Warranty &amp; Guarantees</h2>
+<ul>
+<li>30 days of complimentary bug fixes post-launch</li>
+<li>Code ownership transferred to Community Property Rescue</li>
+<li>Complete source code provided</li>
+<li>Documentation for all custom features</li>
+<li>99.9% uptime guarantee on hosting</li>
+</ul>
+<hr />
+<h2 id="payment-terms">Payment Terms</h2>
+<h3 id="development-fee-7500">Development Fee: $7,500</h3>
+<ul>
+<li>50% ($3,750) due upon contract signing</li>
+<li>50% ($3,750) due upon completion and deployment</li>
+</ul>
+<h3 id="monthly-support-100month">Monthly Support: $100/month</h3>
+<ul>
+<li>Billed monthly beginning the month after launch</li>
+<li>Can be cancelled with 30 days notice</li>
+<li>Discounted annual payment option: $1,080/year (2 months free)</li>
+</ul>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ol type="1">
+<li>Review and approve this proposal</li>
+<li>Sign development agreement</li>
+<li>Submit initial payment</li>
+<li>Schedule kickoff meeting</li>
+<li>Begin discovery phase</li>
+</ol>
+<hr />
+<h2 id="about-daniel-schacht">About Daniel Schacht</h2>
+<p>Daniel Schacht is an experienced web developer specializing in custom
+database applications for nonprofit organizations. With expertise in
+modern web technologies and a track record of successful deployments,
+Daniel delivers reliable, user-friendly solutions tailored to
+organizational needs.</p>
+<p><strong>Contact Information:</strong> - Developer: Daniel Schacht -
+Email: [Your Email] - Phone: [Your Phone]</p>
+<hr />
+<h2 id="questions">Questions?</h2>
+<p>I’m happy to discuss any aspect of this proposal, adjust features
+based on your specific needs, or schedule a call to walk through the
+technical details.</p>
+<p>Thank you for considering this proposal. I look forward to helping
+Community Property Rescue better serve the community through improved
+technology.</p>
+<hr />
+<p><strong>Proposal Valid For:</strong> 30 days from date of issue</p>
+<p><strong>Signature:</strong></p>
+<hr />
+<p>Daniel Schacht Date: _______________</p>
+<p><strong>Accepted By:</strong></p>
+<hr />
+<p>Community Property Rescue Representative Date: _______________</p>
+</body>
+</html>

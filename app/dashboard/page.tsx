@@ -1,0 +1,400 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+
+interface Application {
+  id: string;
+  created_at: string;
+  full_name: string;
+  email: string;
+  phone_number: string;
+  property_address: string;
+  property_county: string;
+  status: string;
+  has_auction_date: boolean;
+  auction_date?: string;
+  has_notice_of_default: boolean;
+  has_notice_of_trustee_sale: boolean;
+}
+
+interface Stats {
+  total: number;
+  pending: number;
+  contacted: number;
+  in_progress: number;
+  closed: number;
+  urgent_auctions: number;
+}
+
+export default function DashboardPage() {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    pending: 0,
+    contacted: 0,
+    in_progress: 0,
+    closed: 0,
+    urgent_auctions: 0,
+  });
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [countyFilter, setCountyFilter] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  useEffect(() => {
+    filterApplications();
+  }, [applications, statusFilter, countyFilter]);
+
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch("/api/applications");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch applications");
+      }
+
+      setApplications(result.data);
+      calculateStats(result.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (data: Application[]) => {
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const stats = {
+      total: data.length,
+      pending: data.filter((app) => app.status === "pending").length,
+      contacted: data.filter((app) => app.status === "contacted").length,
+      in_progress: data.filter((app) => app.status === "in-progress").length,
+      closed: data.filter((app) => app.status === "closed").length,
+      urgent_auctions: data.filter((app) => {
+        if (!app.auction_date) return false;
+        const auctionDate = new Date(app.auction_date);
+        return auctionDate <= sevenDaysFromNow;
+      }).length,
+    };
+
+    setStats(stats);
+  };
+
+  const filterApplications = () => {
+    let filtered = [...applications];
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((app) => app.status === statusFilter);
+    }
+
+    if (countyFilter !== "all") {
+      filtered = filtered.filter((app) => app.property_county === countyFilter);
+    }
+
+    setFilteredApplications(filtered);
+  };
+
+  const getUniqueCounties = () => {
+    const counties = applications.map((app) => app.property_county);
+    return [...new Set(counties)].filter(Boolean).sort();
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "contacted":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "in-progress":
+        return "bg-cyan-100 text-cyan-800 border-cyan-200";
+      case "closed":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const isAuctionUrgent = (auctionDate?: string) => {
+    if (!auctionDate) return false;
+    const now = new Date();
+    const auction = new Date(auctionDate);
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return auction <= sevenDaysFromNow;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="card max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500 mb-4">
+            Make sure your Supabase connection is configured correctly in your environment variables.
+          </p>
+          <button onClick={fetchApplications} className="btn-primary">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Image
+                src="/cpr.png"
+                alt="Community Property Rescue Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm text-gray-600">Community Property Rescue</p>
+              </div>
+            </div>
+            <Link href="/" className="text-cyan-600 hover:text-cyan-700 font-medium">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">Total Applications</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">Pending</p>
+            <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">Contacted</p>
+            <p className="text-3xl font-bold text-blue-600">{stats.contacted}</p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">In Progress</p>
+            <p className="text-3xl font-bold text-cyan-600">{stats.in_progress}</p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">Closed</p>
+            <p className="text-3xl font-bold text-gray-600">{stats.closed}</p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-gray-600 mb-1">Urgent Auctions</p>
+            <p className="text-3xl font-bold text-red-600">{stats.urgent_auctions}</p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="card mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <label htmlFor="statusFilter" className="label">
+                Filter by Status
+              </label>
+              <select
+                id="statusFilter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="contacted">Contacted</option>
+                <option value="in-progress">In Progress</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label htmlFor="countyFilter" className="label">
+                Filter by County
+              </label>
+              <select
+                id="countyFilter"
+                value={countyFilter}
+                onChange={(e) => setCountyFilter(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Counties</option>
+                {getUniqueCounties().map((county) => (
+                  <option key={county} value={county}>
+                    {county}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 flex items-end">
+              <button
+                onClick={() => {
+                  setStatusFilter("all");
+                  setCountyFilter("all");
+                }}
+                className="btn-secondary w-full"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Applications Table */}
+        <div className="card overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Applications ({filteredApplications.length})
+            </h2>
+            <button onClick={fetchApplications} className="text-cyan-600 hover:text-cyan-700">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Urgency
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Submitted
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      No applications found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredApplications.map((app) => (
+                    <tr key={app.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{app.full_name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{app.email}</div>
+                        <div className="text-sm text-gray-500">{app.phone_number}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{app.property_address}</div>
+                        <div className="text-sm text-gray-500">{app.property_county}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeColor(
+                            app.status
+                          )}`}
+                        >
+                          {app.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {app.has_notice_of_default && (
+                            <span className="block text-orange-600 text-xs">• NOD</span>
+                          )}
+                          {app.has_notice_of_trustee_sale && (
+                            <span className="block text-red-600 text-xs">• NTS</span>
+                          )}
+                          {app.auction_date && (
+                            <span
+                              className={`block text-xs ${
+                                isAuctionUrgent(app.auction_date)
+                                  ? "text-red-600 font-bold"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              🗓 {formatDate(app.auction_date)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(app.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Link
+                          href={`/dashboard/application/${app.id}`}
+                          className="text-cyan-600 hover:text-cyan-700 font-medium"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
