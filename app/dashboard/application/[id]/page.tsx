@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import AddNoteModal from "@/components/modals/AddNoteModal";
+import UpdateStatusModal from "@/components/modals/UpdateStatusModal";
 
 interface Application {
   id: string;
@@ -44,6 +46,20 @@ interface Application {
   status: string;
   assigned_to?: string;
   source?: string;
+}
+
+interface CaseEvent {
+  id: string;
+  created_at: string;
+  event_type: string;
+  event_date: string;
+  title: string;
+  description?: string;
+  contact_method?: string;
+  outcome?: string;
+  next_steps?: string;
+  is_milestone: boolean;
+  is_urgent: boolean;
 }
 
 export default function ApplicationDetailPage() {
