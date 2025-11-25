@@ -504,10 +504,10 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link
-                          href={`/dashboard/application/${app.id}`}
+                          href={`/dashboard/property/${app.id}`}
                           className="text-cyan-600 hover:text-cyan-700 font-medium"
                         >
-                          View Details
+                          View / History
                         </Link>
                       </td>
                     </tr>

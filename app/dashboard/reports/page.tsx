@@ -17,6 +17,7 @@ interface FieldVisit {
   longitude: number;
   visit_date: string;
   visit_type: string;
+  visit_outcome?: string; // "attempt" or "engagement"
   location_address: string;
   contact_name?: string;
   staff_member: string;
@@ -56,6 +57,12 @@ interface ReportMetrics {
   applicationsByStatus: Record<string, number>;
   visitsByType: Record<string, number>;
   visitsByWorker: Record<string, number>;
+  // Attempt vs Engagement metrics
+  totalAttempts: number;
+  totalEngagements: number;
+  attemptsByWorker: Record<string, number>;
+  engagementsByWorker: Record<string, number>;
+  engagementRate: number; // percentage
 }
 
 export default function ReportsPage() {
@@ -129,6 +136,8 @@ export default function ReportsPage() {
     const applicationsByStatus: Record<string, number> = {};
     const visitsByType: Record<string, number> = {};
     const visitsByWorker: Record<string, number> = {};
+    const attemptsByWorker: Record<string, number> = {};
+    const engagementsByWorker: Record<string, number> = {};
 
     filteredApps.forEach((app) => {
       applicationsByCounty[app.property_county] =
@@ -137,12 +146,28 @@ export default function ReportsPage() {
         (applicationsByStatus[app.status] || 0) + 1;
     });
 
+    let totalAttempts = 0;
+    let totalEngagements = 0;
+
     filteredVisits.forEach((visit) => {
       visitsByType[visit.visit_type] = (visitsByType[visit.visit_type] || 0) + 1;
       const worker = workers.find((w) => w.id === visit.staff_member);
       const workerName = worker?.full_name || "Unknown";
       visitsByWorker[workerName] = (visitsByWorker[workerName] || 0) + 1;
+
+      // Track attempt vs engagement
+      if (visit.visit_outcome === "attempt") {
+        totalAttempts++;
+        attemptsByWorker[workerName] = (attemptsByWorker[workerName] || 0) + 1;
+      } else if (visit.visit_outcome === "engagement") {
+        totalEngagements++;
+        engagementsByWorker[workerName] = (engagementsByWorker[workerName] || 0) + 1;
+      }
     });
+
+    const engagementRate = filteredVisits.length > 0
+      ? Math.round((totalEngagements / filteredVisits.length) * 100)
+      : 0;
 
     setMetrics({
       totalApplications: filteredApps.length,
@@ -165,6 +190,11 @@ export default function ReportsPage() {
       applicationsByStatus,
       visitsByType,
       visitsByWorker,
+      totalAttempts,
+      totalEngagements,
+      attemptsByWorker,
+      engagementsByWorker,
+      engagementRate,
     });
   };
 
@@ -187,6 +217,7 @@ export default function ReportsPage() {
       data = fieldVisits.map((v) => ({
         "Visit Date": v.visit_date.substring(0, 10),
         "Visit Type": v.visit_type,
+        "Outcome": v.visit_outcome === "attempt" ? "Attempt (No Contact)" : v.visit_outcome === "engagement" ? "Engagement" : "",
         Address: v.location_address,
         "Contact Name": v.contact_name || "",
         "Property Condition": v.property_condition_notes || "",
@@ -388,6 +419,81 @@ export default function ReportsPage() {
                   {metrics.urgentAuctions}
                 </p>
               </div>
+            </div>
+
+            {/* Attempt vs Engagement Summary */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Worker Accountability: Attempts vs Engagements
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-amber-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-amber-600">{metrics.totalAttempts}</p>
+                  <p className="text-sm text-amber-700">Attempts</p>
+                  <p className="text-xs text-gray-500">No one home</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-green-600">{metrics.totalEngagements}</p>
+                  <p className="text-sm text-green-700">Engagements</p>
+                  <p className="text-xs text-gray-500">Client contact</p>
+                </div>
+                <div className="bg-cyan-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-cyan-600">{metrics.engagementRate}%</p>
+                  <p className="text-sm text-cyan-700">Engagement Rate</p>
+                  <p className="text-xs text-gray-500">Success ratio</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-purple-600">{metrics.visitsWithFollowUp}</p>
+                  <p className="text-sm text-purple-700">Pending Follow-ups</p>
+                  <p className="text-xs text-gray-500">Need return visit</p>
+                </div>
+              </div>
+
+              {/* Worker breakdown */}
+              {Object.keys(metrics.visitsByWorker).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Worker Performance</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 text-gray-600">Worker</th>
+                          <th className="text-center py-2 text-gray-600">Total Visits</th>
+                          <th className="text-center py-2 text-amber-600">Attempts</th>
+                          <th className="text-center py-2 text-green-600">Engagements</th>
+                          <th className="text-center py-2 text-gray-600">Engagement Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(metrics.visitsByWorker)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([worker, total]) => {
+                            const attempts = metrics.attemptsByWorker[worker] || 0;
+                            const engagements = metrics.engagementsByWorker[worker] || 0;
+                            const rate = total > 0 ? Math.round((engagements / total) * 100) : 0;
+                            return (
+                              <tr key={worker} className="border-b border-gray-100">
+                                <td className="py-2 text-gray-900">{worker}</td>
+                                <td className="py-2 text-center text-gray-900">{total}</td>
+                                <td className="py-2 text-center text-amber-600">{attempts}</td>
+                                <td className="py-2 text-center text-green-600">{engagements}</td>
+                                <td className="py-2 text-center">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    rate >= 70 ? 'bg-green-100 text-green-700' :
+                                    rate >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {rate}%
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Breakdown Charts */}

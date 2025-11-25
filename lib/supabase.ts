@@ -70,4 +70,9 @@ export interface Applicant {
   source?: string;
   ip_address?: string;
   user_agent?: string;
+
+  // Field Intake metadata (if submitted by worker on-site)
+  submitted_by_worker?: string | null;
+  intake_latitude?: number | null;
+  intake_longitude?: number | null;
 }

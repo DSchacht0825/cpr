@@ -176,13 +176,26 @@ export default function WorkerDashboardPage() {
             New Visit
           </Link>
           <Link
-            href="/worker/visits"
-            className="bg-white border-2 border-gray-200 text-gray-700 rounded-xl p-4 text-center font-semibold hover:border-cyan-300 transition-colors"
+            href="/worker/intake"
+            className="bg-green-600 text-white rounded-xl p-4 text-center font-semibold hover:bg-green-700 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Field Intake
+          </Link>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="mb-6">
+          <Link
+            href="/worker/visits"
+            className="block bg-white border-2 border-gray-200 text-gray-700 rounded-xl p-4 text-center font-semibold hover:border-cyan-300 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            My Visits
+            View My Visits
           </Link>
         </div>
 

@@ -25,6 +25,18 @@ interface AssignedCase {
   property_address: string;
 }
 
+interface SearchResult {
+  id: string;
+  full_name: string;
+  phone_number: string;
+  email: string;
+  property_address: string;
+  property_city: string;
+  property_county: string;
+  property_zip: string;
+  status: string;
+}
+
 export default function NewFieldVisitPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,9 +48,18 @@ export default function NewFieldVisitPage() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState("");
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedApplicant, setSelectedApplicant] = useState<SearchResult | null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const [formData, setFormData] = useState({
     applicant_id: "",
     visit_type: "initial-contact",
+    visit_outcome: "attempt", // attempt or engagement
     location_address: "",
     contact_name: "",
     contact_phone: "",
@@ -98,6 +119,65 @@ export default function NewFieldVisitPage() {
         { enableHighAccuracy: true }
       );
     }
+  };
+
+  // Search for applicants/properties
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Debounce search
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(`/api/applicants/search?q=${encodeURIComponent(query)}`);
+        const result = await response.json();
+        if (response.ok) {
+          setSearchResults(result.data || []);
+          setShowSearchResults(true);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+  };
+
+  const selectApplicant = (applicant: SearchResult) => {
+    setSelectedApplicant(applicant);
+    setFormData((prev) => ({
+      ...prev,
+      applicant_id: applicant.id,
+      location_address: applicant.property_address,
+      contact_name: applicant.full_name,
+      contact_phone: applicant.phone_number,
+      contact_email: applicant.email,
+    }));
+    setSearchQuery("");
+    setShowSearchResults(false);
+  };
+
+  const clearSelectedApplicant = () => {
+    setSelectedApplicant(null);
+    setFormData((prev) => ({
+      ...prev,
+      applicant_id: "",
+      location_address: "",
+      contact_name: "",
+      contact_phone: "",
+      contact_email: "",
+    }));
   };
 
   const handleInputChange = (
@@ -183,9 +263,26 @@ export default function NewFieldVisitPage() {
     e.preventDefault();
     if (!session) return;
 
+    // Validate: Attempts require at least one photo
+    if (formData.visit_outcome === "attempt" && photos.length === 0) {
+      alert("Photo required for visit attempts. Please take a photo to verify you were at the location.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      // Auto-set follow-up for attempts
+      const requiresFollowUp = formData.visit_outcome === "attempt" ? true : formData.requires_follow_up;
+
+      // Set follow-up date to 3 days from now for attempts if not already set
+      let followUpDate = formData.follow_up_date;
+      if (formData.visit_outcome === "attempt" && !followUpDate) {
+        const threeDaysFromNow = new Date();
+        threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+        followUpDate = threeDaysFromNow.toISOString().split("T")[0];
+      }
+
       // Create field visit
       const visitData = {
         ...formData,
@@ -195,6 +292,11 @@ export default function NewFieldVisitPage() {
         latitude: location?.lat || null,
         longitude: location?.lng || null,
         is_synced: true,
+        requires_follow_up: requiresFollowUp,
+        follow_up_date: followUpDate || null,
+        follow_up_notes: formData.visit_outcome === "attempt" && !formData.follow_up_notes
+          ? "Auto-scheduled: Return visit needed - no one was home"
+          : formData.follow_up_notes,
       };
 
       const response = await fetch("/api/worker/visits", {
@@ -260,28 +362,172 @@ export default function NewFieldVisitPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Case Selection */}
+          {/* Property/Customer Search */}
           <section className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-semibold text-gray-900 mb-4">Case Information</h2>
+            <h2 className="font-semibold text-gray-900 mb-4">Find Property / Customer</h2>
 
             <div className="space-y-4">
+              {/* Search Box */}
+              {!selectedApplicant ? (
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Search by name, address, phone, or email
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      placeholder="Start typing to search..."
+                      className="w-full px-3 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
+                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-600"></div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Results Dropdown */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => selectApplicant(result)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                        >
+                          <p className="font-medium text-gray-900">{result.full_name}</p>
+                          <p className="text-sm text-gray-600">{result.property_address}</p>
+                          <p className="text-xs text-gray-500">
+                            {result.property_city}, {result.property_county} {result.property_zip}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {showSearchResults && searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+                      No properties found matching "{searchQuery}"
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500 mt-2">
+                    Or leave empty for a new/untracked property visit
+                  </p>
+                </div>
+              ) : (
+                /* Selected Property Card */
+                <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-cyan-900">{selectedApplicant.full_name}</p>
+                      <p className="text-sm text-cyan-700">{selectedApplicant.property_address}</p>
+                      <p className="text-xs text-cyan-600">
+                        {selectedApplicant.property_city}, {selectedApplicant.property_county} {selectedApplicant.property_zip}
+                      </p>
+                      <p className="text-xs text-cyan-600 mt-1">
+                        {selectedApplicant.phone_number} • {selectedApplicant.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearSelectedApplicant}
+                      className="text-cyan-600 hover:text-cyan-800 p-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick select from assigned cases */}
+              {!selectedApplicant && assignedCases.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Or select from your assigned cases:</p>
+                  <div className="space-y-2">
+                    {assignedCases.slice(0, 3).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            applicant_id: c.id,
+                            location_address: c.property_address,
+                            contact_name: c.full_name,
+                          }));
+                          setSelectedApplicant({
+                            id: c.id,
+                            full_name: c.full_name,
+                            property_address: c.property_address,
+                            phone_number: "",
+                            email: "",
+                            property_city: "",
+                            property_county: "",
+                            property_zip: "",
+                            status: "",
+                          });
+                        }}
+                        className="w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <p className="font-medium text-gray-900 text-sm">{c.full_name}</p>
+                        <p className="text-xs text-gray-600">{c.property_address}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Visit Outcome - Attempt vs Engagement */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Link to Assigned Case (Optional)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Visit Outcome *
                 </label>
-                <select
-                  name="applicant_id"
-                  value={formData.applicant_id}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
-                >
-                  <option value="">-- New/Unassigned Visit --</option>
-                  {assignedCases.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name} - {c.property_address}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, visit_outcome: "attempt" }))}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      formData.visit_outcome === "attempt"
+                        ? "border-amber-500 bg-amber-50 text-amber-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="font-semibold block">Attempt</span>
+                    <span className="text-xs">No one home</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, visit_outcome: "engagement" }))}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      formData.visit_outcome === "engagement"
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="font-semibold block">Engagement</span>
+                    <span className="text-xs">Met with client</span>
+                  </button>
+                </div>
+                {formData.visit_outcome === "attempt" && (
+                  <p className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
+                    Photo required to verify visit attempt. A follow-up reminder will be scheduled.
+                  </p>
+                )}
               </div>
 
               <div>

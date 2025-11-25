@@ -54,7 +54,12 @@ export async function POST(request: NextRequest) {
 
       // Application Status
       status: 'pending',
-      source: 'web_application',
+      source: body.intake_type === 'field' ? 'field_intake' : 'web_application',
+
+      // Field Intake metadata (if submitted by worker)
+      submitted_by_worker: body.submitted_by_worker || null,
+      intake_latitude: body.intake_latitude || null,
+      intake_longitude: body.intake_longitude || null,
 
       // Metadata
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
