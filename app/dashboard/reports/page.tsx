@@ -25,6 +25,7 @@ interface FieldVisit {
   property_condition_notes?: string;
   occupant_situation?: string;
   immediate_needs?: string;
+  general_notes?: string;
   requires_follow_up: boolean;
 }
 
