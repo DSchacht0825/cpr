@@ -273,7 +273,7 @@ export default function NewFieldVisitPage() {
                   name="applicant_id"
                   value={formData.applicant_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 >
                   <option value="">-- New/Unassigned Visit --</option>
                   {assignedCases.map((c) => (
@@ -293,7 +293,7 @@ export default function NewFieldVisitPage() {
                   value={formData.visit_type}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 >
                   <option value="initial-contact">Initial Contact</option>
                   <option value="follow-up">Follow Up</option>
@@ -313,7 +313,7 @@ export default function NewFieldVisitPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="Property address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
             </div>
@@ -334,7 +334,7 @@ export default function NewFieldVisitPage() {
                   value={formData.contact_name}
                   onChange={handleInputChange}
                   placeholder="Name of person contacted"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -349,7 +349,7 @@ export default function NewFieldVisitPage() {
                     value={formData.contact_phone}
                     onChange={handleInputChange}
                     placeholder="Phone number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <div>
@@ -362,7 +362,7 @@ export default function NewFieldVisitPage() {
                     value={formData.contact_email}
                     onChange={handleInputChange}
                     placeholder="Email address"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -384,7 +384,7 @@ export default function NewFieldVisitPage() {
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="Describe the condition of the property..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -398,7 +398,7 @@ export default function NewFieldVisitPage() {
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="Describe the occupant's current situation..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -412,7 +412,7 @@ export default function NewFieldVisitPage() {
                   onChange={handleInputChange}
                   rows={2}
                   placeholder="Any urgent needs identified..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -426,7 +426,7 @@ export default function NewFieldVisitPage() {
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="Any additional notes..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                 />
               </div>
             </div>
@@ -472,7 +472,7 @@ export default function NewFieldVisitPage() {
                         <select
                           value={photo.photo_type}
                           onChange={(e) => updatePhotoMeta(photo.id, "photo_type", e.target.value)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         >
                           <option value="exterior">Exterior</option>
                           <option value="interior">Interior</option>
@@ -485,7 +485,7 @@ export default function NewFieldVisitPage() {
                           value={photo.caption}
                           onChange={(e) => updatePhotoMeta(photo.id, "caption", e.target.value)}
                           placeholder="Add caption..."
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-gray-900"
                         />
                         <button
                           type="button"
@@ -529,7 +529,7 @@ export default function NewFieldVisitPage() {
                       name="follow_up_date"
                       value={formData.follow_up_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                     />
                   </div>
                   <div>
@@ -542,7 +542,7 @@ export default function NewFieldVisitPage() {
                       onChange={handleInputChange}
                       rows={2}
                       placeholder="What needs to be done on follow-up..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
                     />
                   </div>
                 </>
