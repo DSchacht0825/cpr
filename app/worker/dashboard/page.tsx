@@ -107,6 +107,7 @@ export default function WorkerDashboardPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
+      timeZone: "America/Los_Angeles",
       month: "short",
       day: "numeric",
       year: "numeric",

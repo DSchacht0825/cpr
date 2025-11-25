@@ -90,6 +90,7 @@ export default function PropertyDetailPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
+      timeZone: "America/Los_Angeles",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -98,6 +99,7 @@ export default function PropertyDetailPage() {
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
       month: "short",
       day: "numeric",
       year: "numeric",

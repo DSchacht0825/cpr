@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { formatDatePacific, formatShortDate } from "@/lib/dateUtils";
 
 // Dynamically import the map to avoid SSR issues
 const FieldVisitHeatMap = dynamic(
@@ -549,7 +550,7 @@ export default function ReportsPage() {
                               </td>
                               {selectedCard === "urgent" && (
                                 <td className="px-4 py-3 text-sm text-red-600 font-medium">
-                                  {app.auction_date ? new Date(app.auction_date).toLocaleDateString() : "-"}
+                                  {app.auction_date ? formatShortDate(app.auction_date) : "-"}
                                 </td>
                               )}
                               <td className="px-4 py-3 text-sm">
@@ -594,7 +595,7 @@ export default function ReportsPage() {
                             return (
                               <tr key={visit.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                                  {new Date(visit.visit_date).toLocaleDateString()}
+                                  {formatShortDate(visit.visit_date)}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {visit.location_address}
@@ -1040,7 +1041,7 @@ export default function ReportsPage() {
                             {workerVisits.slice(0, 50).map((visit) => (
                               <tr key={visit.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                                  {new Date(visit.visit_date).toLocaleDateString()}
+                                  {formatShortDate(visit.visit_date)}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {visit.location_address}

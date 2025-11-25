@@ -4,6 +4,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// Pacific timezone formatting
+const formatDatePacific = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const formatDateTimePacific = (dateString: string) => {
+  return new Date(dateString).toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 interface WorkerSession {
   user: { id: string; email: string };
   profile: { full_name: string };
@@ -59,22 +79,8 @@ export default function WorkerVisitsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
+  const formatDate = formatDatePacific;
+  const formatDateTime = formatDateTimePacific;
 
   const visitTypeLabels: Record<string, string> = {
     "initial-contact": "Initial Contact",
