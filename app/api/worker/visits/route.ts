@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Creating visit with data:', JSON.stringify(body, null, 2));
 
-    // Clean up the data - remove fields that don't exist in the table
+    // Clean up the data - only include fields that exist in the table
     const visitData = {
       applicant_id: body.applicant_id || null,
       staff_member: body.staff_member,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       property_condition_notes: body.property_condition_notes || null,
       occupant_situation: body.occupant_situation || null,
       immediate_needs: body.immediate_needs || null,
-      general_notes: body.general_notes || null,
+      notes: body.general_notes || null, // Map general_notes to notes column
       requires_follow_up: body.requires_follow_up || false,
       follow_up_date: body.follow_up_date || null,
       follow_up_notes: body.follow_up_notes || null,
