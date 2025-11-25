@@ -78,6 +78,7 @@ export default function ReportsPage() {
   const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
   const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "export">("map");
   const [selectedWorker, setSelectedWorker] = useState<string>("");
+  const [selectedCard, setSelectedCard] = useState<"applications" | "visits" | "pending" | "urgent" | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -417,33 +418,217 @@ export default function ReportsPage() {
         {/* Metrics Tab */}
         {activeTab === "metrics" && metrics && (
           <div className="space-y-6">
-            {/* Summary Cards */}
+            {/* Summary Cards - Now Clickable */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="card">
+              <button
+                onClick={() => setSelectedCard("applications")}
+                className="card text-left hover:ring-2 hover:ring-cyan-500 transition-all cursor-pointer"
+              >
                 <p className="text-sm text-gray-600">Total Applications</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {metrics.totalApplications}
                 </p>
-              </div>
-              <div className="card">
+                <p className="text-xs text-cyan-600 mt-1">Click to view all</p>
+              </button>
+              <button
+                onClick={() => setSelectedCard("visits")}
+                className="card text-left hover:ring-2 hover:ring-cyan-500 transition-all cursor-pointer"
+              >
                 <p className="text-sm text-gray-600">Field Visits</p>
                 <p className="text-3xl font-bold text-cyan-600">
                   {metrics.totalFieldVisits}
                 </p>
-              </div>
-              <div className="card">
+                <p className="text-xs text-cyan-600 mt-1">Click to view all</p>
+              </button>
+              <button
+                onClick={() => setSelectedCard("pending")}
+                className="card text-left hover:ring-2 hover:ring-yellow-500 transition-all cursor-pointer"
+              >
                 <p className="text-sm text-gray-600">Pending Review</p>
                 <p className="text-3xl font-bold text-yellow-600">
                   {metrics.pendingApplications}
                 </p>
-              </div>
-              <div className="card">
+                <p className="text-xs text-yellow-600 mt-1">Click to view all</p>
+              </button>
+              <button
+                onClick={() => setSelectedCard("urgent")}
+                className="card text-left hover:ring-2 hover:ring-red-500 transition-all cursor-pointer"
+              >
                 <p className="text-sm text-gray-600">Urgent Auctions</p>
                 <p className="text-3xl font-bold text-red-600">
                   {metrics.urgentAuctions}
                 </p>
-              </div>
+                <p className="text-xs text-red-600 mt-1">Click to view all</p>
+              </button>
             </div>
+
+            {/* Detail Modal/Panel for clicked card */}
+            {selectedCard && (
+              <div className="card border-2 border-cyan-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {selectedCard === "applications" && "All Applications"}
+                    {selectedCard === "visits" && "All Field Visits"}
+                    {selectedCard === "pending" && "Pending Applications"}
+                    {selectedCard === "urgent" && "Urgent Auctions (Within 7 Days)"}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedCard(null)}
+                    className="text-gray-500 hover:text-gray-700 p-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Applications List */}
+                {(selectedCard === "applications" || selectedCard === "pending" || selectedCard === "urgent") && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          {selectedCard === "urgent" && (
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction Date</th>
+                          )}
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {(() => {
+                          const now = new Date();
+                          const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+                          let filteredApps = applications;
+                          if (selectedCard === "pending") {
+                            filteredApps = applications.filter(a => a.status === "pending");
+                          } else if (selectedCard === "urgent") {
+                            filteredApps = applications.filter(a => {
+                              if (!a.auction_date) return false;
+                              const auctionDate = new Date(a.auction_date);
+                              return auctionDate <= sevenDaysFromNow;
+                            });
+                          }
+
+                          if (filteredApps.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={selectedCard === "urgent" ? 6 : 5} className="px-4 py-8 text-center text-gray-500">
+                                  No applications found
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return filteredApps.map((app) => (
+                            <tr key={app.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.full_name}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {app.property_address}
+                                <br />
+                                <span className="text-gray-400">{app.property_county} {app.property_zip}</span>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <a href={`tel:${app.phone_number}`} className="text-cyan-600 hover:text-cyan-700">
+                                  {app.phone_number}
+                                </a>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  app.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                  app.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                                  app.status === "closed" ? "bg-gray-100 text-gray-800" :
+                                  "bg-green-100 text-green-800"
+                                }`}>
+                                  {app.status}
+                                </span>
+                              </td>
+                              {selectedCard === "urgent" && (
+                                <td className="px-4 py-3 text-sm text-red-600 font-medium">
+                                  {app.auction_date ? new Date(app.auction_date).toLocaleDateString() : "-"}
+                                </td>
+                              )}
+                              <td className="px-4 py-3 text-sm">
+                                <Link
+                                  href={`/dashboard/property/${app.id}`}
+                                  className="text-cyan-600 hover:text-cyan-700 font-medium"
+                                >
+                                  View
+                                </Link>
+                              </td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Field Visits List */}
+                {selectedCard === "visits" && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {fieldVisits.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                              No field visits found
+                            </td>
+                          </tr>
+                        ) : (
+                          fieldVisits.slice(0, 100).map((visit) => {
+                            const worker = workers.find(w => w.id === visit.staff_member);
+                            return (
+                              <tr key={visit.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {new Date(visit.visit_date).toLocaleDateString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visit.location_address}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visitTypeLabels[visit.visit_type] || visit.visit_type}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {visit.visit_outcome && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      visit.visit_outcome === "attempt"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                      {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {worker?.full_name || "Unknown"}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                    {fieldVisits.length > 100 && (
+                      <p className="text-sm text-gray-500 mt-2 px-4">Showing first 100 of {fieldVisits.length} visits</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Attempt vs Engagement Summary */}
             <div className="card">
