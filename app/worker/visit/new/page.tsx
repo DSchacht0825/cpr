@@ -56,6 +56,11 @@ export default function NewFieldVisitPage() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Browse all state
+  const [showBrowseAll, setShowBrowseAll] = useState(false);
+  const [allApplications, setAllApplications] = useState<SearchResult[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
+
   const [formData, setFormData] = useState({
     applicant_id: "",
     visit_type: "initial-contact",
@@ -178,6 +183,39 @@ export default function NewFieldVisitPage() {
       contact_phone: "",
       contact_email: "",
     }));
+  };
+
+  // Fetch all applications for browsing
+  const fetchAllApplications = async () => {
+    if (allApplications.length > 0) {
+      setShowBrowseAll(true);
+      return;
+    }
+
+    setLoadingAll(true);
+    try {
+      const response = await fetch("/api/applications");
+      const result = await response.json();
+      if (response.ok && result.data) {
+        const mapped = result.data.map((app: any) => ({
+          id: app.id,
+          full_name: app.full_name,
+          phone_number: app.phone_number,
+          email: app.email,
+          property_address: app.property_address,
+          property_city: app.property_city || "",
+          property_county: app.property_county,
+          property_zip: app.property_zip,
+          status: app.status,
+        }));
+        setAllApplications(mapped);
+        setShowBrowseAll(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch applications:", err);
+    } finally {
+      setLoadingAll(false);
+    }
   };
 
   const handleInputChange = (
@@ -336,6 +374,71 @@ export default function NewFieldVisitPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Browse All Applications Modal */}
+      {showBrowseAll && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full max-w-lg max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <h3 className="font-semibold text-gray-900">All Applications ({allApplications.length})</h3>
+              <button
+                type="button"
+                onClick={() => setShowBrowseAll(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {allApplications.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p>No applications found</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {allApplications.map((app) => (
+                    <button
+                      key={app.id}
+                      type="button"
+                      onClick={() => {
+                        selectApplicant(app);
+                        setShowBrowseAll(false);
+                      }}
+                      className="w-full text-left px-4 py-4 hover:bg-cyan-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{app.full_name}</p>
+                          <p className="text-sm text-gray-700 truncate">{app.property_address}</p>
+                          <p className="text-xs text-gray-500">
+                            {app.property_city}{app.property_city && app.property_county ? ", " : ""}{app.property_county} {app.property_zip}
+                          </p>
+                          {app.phone_number && (
+                            <p className="text-xs text-gray-500 mt-1">{app.phone_number}</p>
+                          )}
+                        </div>
+                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium shrink-0 ${
+                          app.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                          app.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                          app.status === "approved" ? "bg-green-100 text-green-800" :
+                          "bg-gray-100 text-gray-800"
+                        }`}>
+                          {app.status}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -417,6 +520,16 @@ export default function NewFieldVisitPage() {
                     </div>
                   )}
 
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={fetchAllApplications}
+                      disabled={loadingAll}
+                      className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                    >
+                      {loadingAll ? "Loading..." : "Browse All Applications"}
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500 mt-2">
                     Or leave empty for a new/untracked property visit
                   </p>
