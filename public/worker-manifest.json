@@ -3,7 +3,7 @@
   "short_name": "CPR Field",
   "description": "Community Property Rescue - Field Worker App",
   "start_url": "/worker",
-  "scope": "/worker",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0891b2",
