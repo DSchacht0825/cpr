@@ -31,6 +31,7 @@ interface FieldVisit {
 interface Application {
   id: string;
   full_name: string;
+  property_address: string;
   property_county: string;
   property_zip: string;
   status: string;
@@ -38,6 +39,7 @@ interface Application {
   has_auction_date: boolean;
   auction_date?: string;
   assigned_to?: string;
+  phone_number: string;
 }
 
 interface Worker {
@@ -73,7 +75,8 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
-  const [activeTab, setActiveTab] = useState<"map" | "metrics" | "export">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "export">("map");
+  const [selectedWorker, setSelectedWorker] = useState<string>("");
 
   useEffect(() => {
     fetchData();
@@ -347,7 +350,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 w-fit">
+        <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg mb-6">
           <button
             onClick={() => setActiveTab("map")}
             className={`px-4 py-2 rounded-md font-medium transition-colors ${
@@ -367,6 +370,26 @@ export default function ReportsPage() {
             }`}
           >
             Metrics
+          </button>
+          <button
+            onClick={() => setActiveTab("inactive")}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTab === "inactive"
+                ? "bg-white text-cyan-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            No Activity
+          </button>
+          <button
+            onClick={() => setActiveTab("worker")}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTab === "worker"
+                ? "bg-white text-cyan-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            By Worker
           </button>
           <button
             onClick={() => setActiveTab("export")}
@@ -625,6 +648,296 @@ export default function ReportsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* No Activity Tab - Properties without visits in last 7 days */}
+        {activeTab === "inactive" && (
+          <div className="card">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Properties Without Recent Activity
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Applications that have not had any field visits in the last 7 days.
+            </p>
+
+            {(() => {
+              const sevenDaysAgo = new Date();
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+              // Get applicant IDs that have visits in last 7 days
+              const recentlyVisitedIds = new Set(
+                fieldVisits
+                  .filter((v) => new Date(v.visit_date) >= sevenDaysAgo && v.applicant_id)
+                  .map((v) => v.applicant_id)
+              );
+
+              // Find applications without recent visits
+              const inactiveApps = applications.filter(
+                (app) => !recentlyVisitedIds.has(app.id) && app.status !== "closed"
+              );
+
+              if (inactiveApps.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-green-600 font-medium">All active properties have been visited recently!</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inactiveApps.map((app) => {
+                        const assignedWorker = workers.find((w) => w.id === app.assigned_to);
+                        return (
+                          <tr key={app.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.full_name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {app.property_address}
+                              <br />
+                              <span className="text-gray-400">{app.property_county} {app.property_zip}</span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              <a href={`tel:${app.phone_number}`} className="text-cyan-600 hover:text-cyan-700">
+                                {app.phone_number}
+                              </a>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                app.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                app.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                                "bg-gray-100 text-gray-800"
+                              }`}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {assignedWorker?.full_name || <span className="text-red-500">Unassigned</span>}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <Link
+                                href={`/dashboard/property/${app.id}`}
+                                className="text-cyan-600 hover:text-cyan-700 font-medium"
+                              >
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="text-sm text-gray-500 mt-4">
+                    {inactiveApps.length} properties need attention
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Worker Report Tab */}
+        {activeTab === "worker" && (
+          <div className="card">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Worker Activity Report
+            </h2>
+
+            {/* Worker Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Worker
+              </label>
+              <select
+                value={selectedWorker}
+                onChange={(e) => setSelectedWorker(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 min-w-[200px]"
+              >
+                <option value="">-- Select a worker --</option>
+                {workers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedWorker ? (
+              (() => {
+                const workerName = workers.find((w) => w.id === selectedWorker)?.full_name || "Unknown";
+
+                // Filter visits by worker and date range
+                let workerVisits = fieldVisits.filter((v) => v.staff_member === selectedWorker);
+
+                if (startDate) {
+                  workerVisits = workerVisits.filter((v) => v.visit_date.substring(0, 10) >= startDate);
+                }
+                if (endDate) {
+                  workerVisits = workerVisits.filter((v) => v.visit_date.substring(0, 10) <= endDate);
+                }
+
+                const attempts = workerVisits.filter((v) => v.visit_outcome === "attempt");
+                const engagements = workerVisits.filter((v) => v.visit_outcome === "engagement");
+                const engagementRate = workerVisits.length > 0
+                  ? Math.round((engagements.length / workerVisits.length) * 100)
+                  : 0;
+
+                // Get unique properties visited
+                const uniqueProperties = new Set(workerVisits.map((v) => v.applicant_id).filter(Boolean));
+
+                return (
+                  <div>
+                    {/* Worker Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                      <div className="bg-gray-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-gray-900">{workerVisits.length}</p>
+                        <p className="text-sm text-gray-600">Total Visits</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-amber-600">{attempts.length}</p>
+                        <p className="text-sm text-amber-700">Attempts</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-green-600">{engagements.length}</p>
+                        <p className="text-sm text-green-700">Engagements</p>
+                      </div>
+                      <div className="bg-cyan-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-cyan-600">{engagementRate}%</p>
+                        <p className="text-sm text-cyan-700">Engagement Rate</p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-purple-600">{uniqueProperties.size}</p>
+                        <p className="text-sm text-purple-700">Properties</p>
+                      </div>
+                    </div>
+
+                    {/* Visit List */}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      Visit History for {workerName}
+                      {(startDate || endDate) && (
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          ({startDate || "All"} to {endDate || "Now"})
+                        </span>
+                      )}
+                    </h3>
+
+                    {workerVisits.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">No visits found for selected criteria</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {workerVisits.slice(0, 50).map((visit) => (
+                              <tr key={visit.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {new Date(visit.visit_date).toLocaleDateString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visit.location_address}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visitTypeLabels[visit.visit_type] || visit.visit_type}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {visit.visit_outcome && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      visit.visit_outcome === "attempt"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                      {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                                  {visit.general_notes || visit.property_condition_notes || "-"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {workerVisits.length > 50 && (
+                          <p className="text-sm text-gray-500 mt-2">Showing first 50 of {workerVisits.length} visits</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Export Worker Data */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          const data = workerVisits.map((v) => ({
+                            "Date": v.visit_date.substring(0, 10),
+                            "Address": v.location_address,
+                            "Type": v.visit_type,
+                            "Outcome": v.visit_outcome || "",
+                            "Contact": v.contact_name || "",
+                            "Property Condition": v.property_condition_notes || "",
+                            "Occupant Situation": v.occupant_situation || "",
+                            "Immediate Needs": v.immediate_needs || "",
+                            "Notes": v.general_notes || "",
+                            "Follow-up": v.requires_follow_up ? "Yes" : "No",
+                          }));
+
+                          if (data.length === 0) {
+                            alert("No data to export");
+                            return;
+                          }
+
+                          const headers = Object.keys(data[0]);
+                          const csvContent = [
+                            headers.join(","),
+                            ...data.map((row) =>
+                              headers.map((h) => `"${String(row[h as keyof typeof row] || "").replace(/"/g, '""')}"`).join(",")
+                            ),
+                          ].join("\n");
+
+                          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                          const link = document.createElement("a");
+                          link.href = URL.createObjectURL(blob);
+                          link.download = `${workerName.replace(/\s+/g, "_")}_visits_${new Date().toISOString().substring(0, 10)}.csv`;
+                          link.click();
+                        }}
+                        className="btn-primary"
+                      >
+                        Export Worker Report (CSV)
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <p>Select a worker above to view their activity report</p>
+              </div>
+            )}
           </div>
         )}
 
