@@ -26,9 +26,9 @@ export default function HeatMap({ visits, height = "400px" }: HeatMapProps) {
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     if (!token) {
-      console.error("Mapbox token not found");
+      console.error("Mapbox token not found. Add NEXT_PUBLIC_MAPBOX_TOKEN to .env.local");
       return;
     }
 

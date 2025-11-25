@@ -29,11 +29,11 @@ export default function FieldVisitHeatMap({ visits }: FieldVisitHeatMapProps) {
   useEffect(() => {
     if (!mapContainer.current) return
 
-    const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
+    const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
     if (!accessToken || accessToken === 'your-mapbox-token-here') {
       setMapError(
-        'Mapbox access token not configured. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file.'
+        'Mapbox access token not configured. Please add NEXT_PUBLIC_MAPBOX_TOKEN to your .env.local file.'
       )
       return
     }
