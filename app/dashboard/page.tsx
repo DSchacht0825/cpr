@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Dynamic import for the map to avoid SSR issues
+const HeatMap = dynamic(() => import("@/components/HeatMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[400px] bg-gray-100 rounded-xl flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+    </div>
+  ),
+});
 
 interface Application {
   id: string;
@@ -36,6 +47,15 @@ interface Stats {
   urgent_auctions: number;
 }
 
+interface VisitLocation {
+  id: string;
+  latitude: number;
+  longitude: number;
+  visit_outcome?: string;
+  location_address: string;
+  visit_date: string;
+}
+
 export default function DashboardPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
@@ -54,10 +74,13 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [visitLocations, setVisitLocations] = useState<VisitLocation[]>([]);
+  const [showMap, setShowMap] = useState(true);
 
   useEffect(() => {
     fetchApplications();
     fetchWorkers();
+    fetchVisitLocations();
   }, []);
 
   useEffect(() => {
@@ -91,6 +114,22 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Failed to fetch workers:", err);
+    }
+  };
+
+  const fetchVisitLocations = async () => {
+    try {
+      const response = await fetch("/api/dashboard/field-visits");
+      const result = await response.json();
+      if (response.ok && result.data) {
+        // Filter to only visits with GPS coordinates
+        const locationsWithCoords = result.data.filter(
+          (v: VisitLocation) => v.latitude && v.longitude
+        );
+        setVisitLocations(locationsWithCoords);
+      }
+    } catch (err) {
+      console.error("Failed to fetch visit locations:", err);
     }
   };
 
@@ -290,6 +329,25 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-600 mb-1">Urgent Auctions</p>
             <p className="text-3xl font-bold text-red-600">{stats.urgent_auctions}</p>
           </div>
+        </div>
+
+        {/* Heat Map */}
+        <div className="card mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Field Visit Heat Map</h2>
+              <p className="text-sm text-gray-600">
+                {visitLocations.length} visits with GPS coordinates
+              </p>
+            </div>
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
+            >
+              {showMap ? "Hide Map" : "Show Map"}
+            </button>
+          </div>
+          {showMap && <HeatMap visits={visitLocations} height="400px" />}
         </div>
 
         {/* Filters */}
