@@ -18,6 +18,13 @@ interface Application {
   auction_date?: string;
   has_notice_of_default: boolean;
   has_notice_of_trustee_sale: boolean;
+  assigned_to?: string;
+}
+
+interface Worker {
+  id: string;
+  full_name: string;
+  role: string;
 }
 
 interface Stats {
@@ -45,9 +52,12 @@ export default function DashboardPage() {
   const [customZip, setCustomZip] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchApplications();
+    fetchWorkers();
   }, []);
 
   useEffect(() => {
@@ -70,6 +80,47 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchWorkers = async () => {
+    try {
+      const response = await fetch("/api/workers");
+      const result = await response.json();
+      if (response.ok) {
+        setWorkers(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch workers:", err);
+    }
+  };
+
+  const handleAssignWorker = async (applicationId: string, workerId: string | null) => {
+    setAssigningId(applicationId);
+    try {
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigned_to: workerId }),
+      });
+
+      if (response.ok) {
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.id === applicationId ? { ...app, assigned_to: workerId || undefined } : app
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to assign worker:", err);
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
+  const getWorkerName = (workerId?: string) => {
+    if (!workerId) return null;
+    const worker = workers.find((w) => w.id === workerId);
+    return worker?.full_name || "Unknown";
   };
 
   const calculateStats = (data: Application[]) => {
@@ -365,6 +416,9 @@ export default function DashboardPage() {
                     Submitted
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -372,7 +426,7 @@ export default function DashboardPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredApplications.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       No applications found
                     </td>
                   </tr>
@@ -422,6 +476,26 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(app.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <select
+                          value={app.assigned_to || ""}
+                          onChange={(e) =>
+                            handleAssignWorker(app.id, e.target.value || null)
+                          }
+                          disabled={assigningId === app.id}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50"
+                        >
+                          <option value="">Unassigned</option>
+                          {workers.map((worker) => (
+                            <option key={worker.id} value={worker.id}>
+                              {worker.full_name}
+                            </option>
+                          ))}
+                        </select>
+                        {assigningId === app.id && (
+                          <span className="ml-2 text-gray-400">...</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link

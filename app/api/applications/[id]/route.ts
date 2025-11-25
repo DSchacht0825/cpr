@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('applicants')
       .select('*')
       .eq('id', id)
@@ -47,7 +47,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('applicants')
       .update(body)
       .eq('id', id)
