@@ -251,9 +251,14 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-600">Community Property Rescue</p>
               </div>
             </div>
-            <Link href="/" className="text-cyan-600 hover:text-cyan-700 font-medium">
-              ← Back to Home
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link href="/dashboard/reports" className="text-cyan-600 hover:text-cyan-700 font-medium">
+                Reports & Analytics
+              </Link>
+              <Link href="/" className="text-gray-500 hover:text-gray-700 font-medium">
+                ← Home
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
