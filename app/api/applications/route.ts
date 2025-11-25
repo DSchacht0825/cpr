@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import type { Applicant } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert into Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('applicants')
       .insert([applicantData])
       .select()
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('applicants')
       .select('*')
       .order('created_at', { ascending: false });
