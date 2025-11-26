@@ -7,16 +7,32 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    console.log('Fetching visits for applicant:', id);
 
-    // Fetch all visits for this applicant with worker info
+    // Fetch all visits for this applicant
     const { data: visits, error: visitsError } = await supabaseAdmin
       .from('field_visits')
-      .select(`
-        *,
-        worker:user_profiles!field_visits_staff_member_fkey(id, full_name, email)
-      `)
+      .select('*')
       .eq('applicant_id', id)
       .order('visit_date', { ascending: false });
+
+    // Fetch worker info separately if there are visits
+    let visitsWithWorker = visits || [];
+    if (visits && visits.length > 0) {
+      const staffIds = [...new Set(visits.map(v => v.staff_member).filter(Boolean))];
+      if (staffIds.length > 0) {
+        const { data: workers } = await supabaseAdmin
+          .from('user_profiles')
+          .select('id, full_name, email')
+          .in('id', staffIds);
+
+        const workerMap = new Map(workers?.map(w => [w.id, w]) || []);
+        visitsWithWorker = visits.map(v => ({
+          ...v,
+          worker: v.staff_member ? workerMap.get(v.staff_member) || null : null
+        }));
+      }
+    }
 
     if (visitsError) {
       console.error('Supabase error fetching visits:', visitsError);
@@ -43,10 +59,10 @@ export async function GET(
 
     return NextResponse.json({
       applicant,
-      visits: visits || [],
-      visitCount: visits?.length || 0,
-      attemptCount: visits?.filter(v => v.visit_outcome === 'attempt').length || 0,
-      engagementCount: visits?.filter(v => v.visit_outcome === 'engagement').length || 0,
+      visits: visitsWithWorker,
+      visitCount: visitsWithWorker.length,
+      attemptCount: visitsWithWorker.filter(v => v.visit_outcome === 'attempt').length,
+      engagementCount: visitsWithWorker.filter(v => v.visit_outcome === 'engagement').length,
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching applicant visits:', error);
