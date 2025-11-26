@@ -913,8 +913,8 @@ export default function ReportsPage() {
                                 {app.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {assignedWorker?.full_name || <span className="text-red-500">Unassigned</span>}
+                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                              {assignedWorker?.full_name || <span className="text-red-600 font-medium">Unassigned</span>}
                             </td>
                             <td className="px-4 py-3 text-sm">
                               <Link

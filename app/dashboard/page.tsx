@@ -548,11 +548,11 @@ export default function DashboardPage() {
                             handleAssignWorker(app.id, e.target.value || null)
                           }
                           disabled={assigningId === app.id}
-                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50"
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50 text-gray-900 font-medium"
                         >
-                          <option value="">Unassigned</option>
+                          <option value="" className="text-gray-700">Unassigned</option>
                           {workers.map((worker) => (
-                            <option key={worker.id} value={worker.id}>
+                            <option key={worker.id} value={worker.id} className="text-gray-900">
                               {worker.full_name}
                             </option>
                           ))}
