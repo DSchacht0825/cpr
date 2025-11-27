@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -68,6 +69,7 @@ interface VisitLocation {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -88,12 +90,30 @@ export default function DashboardPage() {
   const [closingId, setClosingId] = useState<string | null>(null);
   const [visitLocations, setVisitLocations] = useState<VisitLocation[]>([]);
   const [showMap, setShowMap] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
+  // Check admin access on mount
   useEffect(() => {
+    const storedSession = localStorage.getItem("worker_session");
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        // Only allow admins to access dashboard
+        if (session.profile?.role !== "admin") {
+          router.push("/worker/dashboard");
+          return;
+        }
+      } catch {
+        // Invalid session, redirect to login
+        router.push("/worker");
+        return;
+      }
+    }
+    setAuthChecked(true);
     fetchApplications();
     fetchWorkers();
     fetchVisitLocations();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     filterApplications();

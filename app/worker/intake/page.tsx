@@ -7,7 +7,11 @@ import Link from "next/link";
 
 interface WorkerSession {
   user: { id: string; email: string };
-  profile: { full_name: string };
+  profile: {
+    full_name: string;
+    role?: string;
+    can_access_dashboard?: boolean;
+  };
   session: { access_token: string };
 }
 
@@ -235,8 +239,7 @@ export default function WorkerIntakePage() {
               The application has been submitted successfully and will appear in the admin dashboard.
             </p>
             <div className="space-y-3">
-              <Link
-                href="/worker/intake"
+              <button
                 onClick={() => {
                   setSubmitSuccess(false);
                   setFormData({
@@ -275,16 +278,18 @@ export default function WorkerIntakePage() {
                   });
                   setCurrentStep(1);
                 }}
-                className="block w-full bg-cyan-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-cyan-700"
+                className="block w-full bg-cyan-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-cyan-700 text-center"
               >
                 Submit Another Application
-              </Link>
-              <Link
-                href="/worker/dashboard"
-                className="block w-full bg-white border-2 border-gray-200 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:border-cyan-300"
-              >
-                Return to Dashboard
-              </Link>
+              </button>
+              {session?.profile?.role === "admin" && (
+                <Link
+                  href="/dashboard"
+                  className="block w-full bg-white border-2 border-gray-200 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:border-cyan-300 text-center"
+                >
+                  Go to Admin Dashboard
+                </Link>
+              )}
             </div>
           </div>
         </main>

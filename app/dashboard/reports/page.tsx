@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -90,6 +91,7 @@ interface ReportMetrics {
 }
 
 export default function ReportsPage() {
+  const router = useRouter();
   const [fieldVisits, setFieldVisits] = useState<FieldVisit[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -106,8 +108,22 @@ export default function ReportsPage() {
   const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   useEffect(() => {
+    // Check admin access
+    const storedSession = localStorage.getItem("worker_session");
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        if (session.profile?.role !== "admin") {
+          router.push("/worker/dashboard");
+          return;
+        }
+      } catch {
+        router.push("/worker");
+        return;
+      }
+    }
     fetchData();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (applications.length > 0 || fieldVisits.length > 0) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
@@ -85,16 +85,31 @@ interface PropertyData {
 
 export default function PropertyDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [data, setData] = useState<PropertyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showFullApplication, setShowFullApplication] = useState(true);
 
   useEffect(() => {
+    // Check admin access
+    const storedSession = localStorage.getItem("worker_session");
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        if (session.profile?.role !== "admin") {
+          router.push("/worker/dashboard");
+          return;
+        }
+      } catch {
+        router.push("/worker");
+        return;
+      }
+    }
     if (params.id) {
       fetchPropertyData(params.id as string);
     }
-  }, [params.id]);
+  }, [params.id, router]);
 
   const fetchPropertyData = async (id: string) => {
     try {

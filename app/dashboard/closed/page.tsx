@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -28,6 +29,7 @@ const CLOSE_OUTCOMES: Record<string, string> = {
 };
 
 export default function ClosedApplicationsPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<ClosedApplication[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<ClosedApplication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,8 +39,22 @@ export default function ClosedApplicationsPage() {
   const [endDate, setEndDate] = useState<string>("");
 
   useEffect(() => {
+    // Check admin access
+    const storedSession = localStorage.getItem("worker_session");
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        if (session.profile?.role !== "admin") {
+          router.push("/worker/dashboard");
+          return;
+        }
+      } catch {
+        router.push("/worker");
+        return;
+      }
+    }
     fetchClosedApplications();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     filterApplications();
