@@ -478,7 +478,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Applications Table */}
-        <div className="card overflow-hidden">
+        <div className="card overflow-visible">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
               Applications ({filteredApplications.length})
@@ -501,7 +501,7 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
