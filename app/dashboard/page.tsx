@@ -360,6 +360,9 @@ export default function DashboardPage() {
               <Link href="/dashboard/reports" className="text-cyan-600 hover:text-cyan-700 font-medium">
                 Reports & Analytics
               </Link>
+              <Link href="/dashboard/users" className="text-purple-600 hover:text-purple-700 font-medium">
+                User Management
+              </Link>
               <Link href="/" className="text-gray-500 hover:text-gray-700 font-medium">
                 ← Home
               </Link>
