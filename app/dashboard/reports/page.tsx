@@ -42,7 +42,18 @@ interface Application {
   auction_date?: string;
   assigned_to?: string;
   phone_number: string;
+  close_outcome?: string;
+  closed_at?: string;
 }
+
+const CLOSE_OUTCOMES: Record<string, string> = {
+  loan_modification_approved: "Loan Modification Approved",
+  adu_development: "ADU Development",
+  accepted_relocation: "Accepted Relocation",
+  customer_filed_bankruptcy: "Customer Filed Bankruptcy",
+  moving_forward_other: "Moving Forward Others Option",
+  client_refused_help: "Client Refused Help",
+};
 
 interface Worker {
   id: string;
@@ -77,7 +88,7 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
-  const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "export">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "outcomes" | "export">("map");
   const [selectedWorker, setSelectedWorker] = useState<string>("");
   const [selectedCard, setSelectedCard] = useState<"applications" | "visits" | "pending" | "urgent" | null>(null);
 
@@ -393,6 +404,16 @@ export default function ReportsPage() {
             }`}
           >
             By Worker
+          </button>
+          <button
+            onClick={() => setActiveTab("outcomes")}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTab === "outcomes"
+                ? "bg-white text-cyan-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            Outcomes
           </button>
           <button
             onClick={() => setActiveTab("export")}
@@ -1125,6 +1146,226 @@ export default function ReportsPage() {
                 <p>Select a worker above to view their activity report</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Outcomes Tab */}
+        {activeTab === "outcomes" && (
+          <div className="space-y-6">
+            <div className="card">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                Close Outcomes Report
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Analysis of closed applications by outcome type. Use the date filter above to filter by closed date.
+              </p>
+
+              {(() => {
+                // Get closed applications filtered by date
+                let closedApps = applications.filter((a) => a.status === "closed");
+
+                // Filter by closed_at date range
+                if (startDate) {
+                  closedApps = closedApps.filter((a) => {
+                    if (!a.closed_at) return false;
+                    return a.closed_at.substring(0, 10) >= startDate;
+                  });
+                }
+                if (endDate) {
+                  closedApps = closedApps.filter((a) => {
+                    if (!a.closed_at) return false;
+                    return a.closed_at.substring(0, 10) <= endDate;
+                  });
+                }
+
+                // Calculate outcome counts
+                const outcomeCounts: Record<string, number> = {};
+                closedApps.forEach((app) => {
+                  const outcome = app.close_outcome || "unknown";
+                  outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
+                });
+
+                const getOutcomeBadgeColor = (outcome: string) => {
+                  switch (outcome) {
+                    case "loan_modification_approved":
+                      return "bg-green-100 text-green-800";
+                    case "adu_development":
+                      return "bg-blue-100 text-blue-800";
+                    case "accepted_relocation":
+                      return "bg-purple-100 text-purple-800";
+                    case "customer_filed_bankruptcy":
+                      return "bg-yellow-100 text-yellow-800";
+                    case "moving_forward_other":
+                      return "bg-cyan-100 text-cyan-800";
+                    case "client_refused_help":
+                      return "bg-red-100 text-red-800";
+                    default:
+                      return "bg-gray-100 text-gray-800";
+                  }
+                };
+
+                const exportOutcomesToCSV = () => {
+                  if (closedApps.length === 0) {
+                    alert("No closed applications to export");
+                    return;
+                  }
+
+                  const data = closedApps.map((app) => ({
+                    "Full Name": app.full_name,
+                    "Phone Number": app.phone_number,
+                    "Property Address": app.property_address,
+                    "County": app.property_county,
+                    "ZIP Code": app.property_zip,
+                    "Outcome": CLOSE_OUTCOMES[app.close_outcome || ""] || app.close_outcome || "Unknown",
+                    "Closed Date": app.closed_at ? formatShortDate(app.closed_at) : "",
+                    "Original Submission": formatShortDate(app.created_at),
+                  }));
+
+                  const headers = Object.keys(data[0]);
+                  const csvContent = [
+                    headers.join(","),
+                    ...data.map((row) =>
+                      headers.map((h) => `"${String(row[h as keyof typeof row] || "").replace(/"/g, '""')}"`).join(",")
+                    ),
+                  ].join("\n");
+
+                  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                  const link = document.createElement("a");
+                  link.href = URL.createObjectURL(blob);
+                  const dateStr = new Date().toISOString().substring(0, 10);
+                  link.download = `CPR_Outcomes_Report_${dateStr}.csv`;
+                  link.click();
+                };
+
+                return (
+                  <>
+                    {/* Outcome Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-gray-50 rounded-lg p-4 text-center">
+                        <p className="text-3xl font-bold text-gray-900">{closedApps.length}</p>
+                        <p className="text-sm text-gray-600">Total Closed</p>
+                      </div>
+                      {Object.entries(CLOSE_OUTCOMES).slice(0, 3).map(([key, label]) => (
+                        <div key={key} className={`rounded-lg p-4 text-center ${getOutcomeBadgeColor(key).replace('text-', 'bg-').replace('-800', '-50')}`}>
+                          <p className={`text-3xl font-bold ${getOutcomeBadgeColor(key).replace('bg-', 'text-').replace('-100', '-600')}`}>
+                            {outcomeCounts[key] || 0}
+                          </p>
+                          <p className="text-sm text-gray-700 truncate" title={label}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      {Object.entries(CLOSE_OUTCOMES).slice(3).map(([key, label]) => (
+                        <div key={key} className={`rounded-lg p-4 text-center ${getOutcomeBadgeColor(key).replace('text-', 'bg-').replace('-800', '-50')}`}>
+                          <p className={`text-3xl font-bold ${getOutcomeBadgeColor(key).replace('bg-', 'text-').replace('-100', '-600')}`}>
+                            {outcomeCounts[key] || 0}
+                          </p>
+                          <p className="text-sm text-gray-700 truncate" title={label}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Outcome Breakdown Chart */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Outcome Distribution</h3>
+                      <div className="space-y-3">
+                        {Object.entries(CLOSE_OUTCOMES).map(([key, label]) => {
+                          const count = outcomeCounts[key] || 0;
+                          const percentage = closedApps.length > 0 ? (count / closedApps.length) * 100 : 0;
+                          return (
+                            <div key={key} className="flex items-center">
+                              <span className="w-48 text-sm text-gray-600 truncate" title={label}>
+                                {label}
+                              </span>
+                              <div className="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div
+                                  className={`h-4 rounded-full ${getOutcomeBadgeColor(key).replace('text-', 'bg-').replace('-800', '-500')}`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <span className="w-16 text-sm font-medium text-gray-900 text-right">
+                                {count} ({Math.round(percentage)}%)
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Export Button */}
+                    <div className="flex justify-end pt-4 border-t border-gray-200">
+                      <button
+                        onClick={exportOutcomesToCSV}
+                        disabled={closedApps.length === 0}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export Outcomes to CSV
+                      </button>
+                    </div>
+
+                    {/* Closed Applications Table */}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Closed Applications
+                        {(startDate || endDate) && (
+                          <span className="text-sm font-normal text-gray-500 ml-2">
+                            ({startDate || "All"} to {endDate || "Now"})
+                          </span>
+                        )}
+                      </h3>
+                      {closedApps.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">No closed applications found for selected date range</p>
+                      ) : (
+                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Closed Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {closedApps.map((app) => (
+                                <tr key={app.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.full_name}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {app.property_address}
+                                    <br />
+                                    <span className="text-gray-400">{app.property_county} {app.property_zip}</span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOutcomeBadgeColor(app.close_outcome || "")}`}>
+                                      {CLOSE_OUTCOMES[app.close_outcome || ""] || app.close_outcome || "Unknown"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {app.closed_at ? formatShortDate(app.closed_at) : "N/A"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <Link
+                                      href={`/dashboard/property/${app.id}`}
+                                      className="text-cyan-600 hover:text-cyan-700 font-medium"
+                                    >
+                                      View
+                                    </Link>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         )}
 
