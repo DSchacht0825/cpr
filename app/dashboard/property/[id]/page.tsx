@@ -190,7 +190,11 @@ export default function PropertyDetailPage() {
       doc.setTextColor(107, 114, 128);
       doc.text(label + ":", leftMargin, y);
       doc.setFont("helvetica", isHighlight ? "bold" : "normal");
-      doc.setTextColor(isHighlight ? 220, 38, 38 : 31, 41, 55);
+      if (isHighlight) {
+        doc.setTextColor(220, 38, 38);
+      } else {
+        doc.setTextColor(31, 41, 55);
+      }
       const lines = doc.splitTextToSize(value, pageWidth - rightCol);
       doc.text(lines, rightCol, y);
       y += Math.max(lineHeight, lines.length * 5);
