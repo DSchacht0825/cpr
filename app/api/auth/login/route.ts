@@ -36,18 +36,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user profile
+    console.log('Looking up profile for user ID:', authData.user.id);
+
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .select('*')
       .eq('id', authData.user.id)
       .single();
 
+    console.log('Profile lookup result:', { profile, profileError });
+
     if (profileError || !profile) {
+      console.error('Profile not found for user:', authData.user.id, profileError);
       return NextResponse.json(
         { error: 'User profile not found. Contact administrator.' },
         { status: 403 }
       );
     }
+
+    console.log('User role from database:', profile.role);
 
     if (!profile.is_active) {
       return NextResponse.json(
