@@ -95,24 +95,29 @@ export default function DashboardPage() {
   // Check admin access on mount
   useEffect(() => {
     const storedSession = localStorage.getItem("worker_session");
-    if (storedSession) {
-      try {
-        const session = JSON.parse(storedSession);
-        // Only allow admins to access dashboard
-        if (session.profile?.role !== "admin") {
-          router.push("/worker/dashboard");
-          return;
-        }
-      } catch {
-        // Invalid session, redirect to login
-        router.push("/worker");
+    if (!storedSession) {
+      // No session, redirect to login
+      router.push("/worker");
+      return;
+    }
+
+    try {
+      const session = JSON.parse(storedSession);
+      // Only allow admins to access dashboard
+      if (session.profile?.role !== "admin") {
+        router.push("/worker/dashboard");
         return;
       }
+      // Admin verified, load data
+      setAuthChecked(true);
+      fetchApplications();
+      fetchWorkers();
+      fetchVisitLocations();
+    } catch {
+      // Invalid session, redirect to login
+      router.push("/worker");
+      return;
     }
-    setAuthChecked(true);
-    fetchApplications();
-    fetchWorkers();
-    fetchVisitLocations();
   }, [router]);
 
   useEffect(() => {
