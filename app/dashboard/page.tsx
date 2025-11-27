@@ -546,7 +546,7 @@ export default function DashboardPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Assigned To
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
                     Actions
                   </th>
                 </tr>
@@ -625,11 +625,11 @@ export default function DashboardPage() {
                           <span className="ml-2 text-gray-400">...</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-3">
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex items-center gap-3 flex-nowrap">
                           <Link
                             href={`/dashboard/property/${app.id}`}
-                            className="text-cyan-600 hover:text-cyan-700 font-medium"
+                            className="text-cyan-600 hover:text-cyan-700 font-medium whitespace-nowrap"
                           >
                             View
                           </Link>
@@ -637,7 +637,7 @@ export default function DashboardPage() {
                             value=""
                             onChange={(e) => handleCloseApplication(app.id, e.target.value)}
                             disabled={closingId === app.id}
-                            className="text-sm border border-gray-300 rounded-md px-2 py-1 text-gray-700 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                            className="text-sm border border-gray-300 rounded-md px-3 py-1.5 text-gray-700 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 min-w-[180px] cursor-pointer bg-white"
                           >
                             <option value="">Close Out...</option>
                             {CLOSE_OUTCOMES.map((outcome) => (
@@ -647,7 +647,7 @@ export default function DashboardPage() {
                             ))}
                           </select>
                           {closingId === app.id && (
-                            <span className="text-gray-400 text-xs">Closing...</span>
+                            <span className="text-gray-400 text-xs whitespace-nowrap">Closing...</span>
                           )}
                         </div>
                       </td>
