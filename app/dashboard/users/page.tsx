@@ -266,7 +266,7 @@ export default function UserManagementPage() {
                     value={newUser.full_name}
                     onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                     placeholder="John Doe"
                   />
                 </div>
@@ -280,7 +280,7 @@ export default function UserManagementPage() {
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -295,7 +295,7 @@ export default function UserManagementPage() {
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     required
                     minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                     placeholder="Min 6 characters"
                   />
                 </div>
@@ -315,7 +315,7 @@ export default function UserManagementPage() {
                         can_field_intake: role === "admin" || role === "field_worker",
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                   >
                     {ROLES.map((role) => (
                       <option key={role.value} value={role.value}>
@@ -419,7 +419,7 @@ export default function UserManagementPage() {
                     value={editingUser.full_name}
                     onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                   />
                 </div>
 
@@ -438,7 +438,7 @@ export default function UserManagementPage() {
                         can_field_intake: role === "admin" || role === "field_worker",
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
                   >
                     {ROLES.map((role) => (
                       <option key={role.value} value={role.value}>
