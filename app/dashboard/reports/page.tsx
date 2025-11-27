@@ -91,6 +91,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "outcomes" | "export">("map");
   const [selectedWorker, setSelectedWorker] = useState<string>("");
   const [selectedCard, setSelectedCard] = useState<"applications" | "visits" | "pending" | "urgent" | null>(null);
+  const [selectedMetricCard, setSelectedMetricCard] = useState<"attempts" | "engagements" | "followups" | "status" | "county" | "visitType" | "visitWorker" | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -658,27 +659,118 @@ export default function ReportsPage() {
                 Worker Accountability: Attempts vs Engagements
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-amber-50 rounded-lg p-4 text-center">
+                <button
+                  onClick={() => setSelectedMetricCard(selectedMetricCard === "attempts" ? null : "attempts")}
+                  className={`bg-amber-50 rounded-lg p-4 text-center hover:ring-2 hover:ring-amber-400 transition-all cursor-pointer ${selectedMetricCard === "attempts" ? "ring-2 ring-amber-500" : ""}`}
+                >
                   <p className="text-3xl font-bold text-amber-600">{metrics.totalAttempts}</p>
                   <p className="text-sm text-amber-700">Attempts</p>
                   <p className="text-xs text-gray-500">No one home</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-amber-600 mt-1">Click to view</p>
+                </button>
+                <button
+                  onClick={() => setSelectedMetricCard(selectedMetricCard === "engagements" ? null : "engagements")}
+                  className={`bg-green-50 rounded-lg p-4 text-center hover:ring-2 hover:ring-green-400 transition-all cursor-pointer ${selectedMetricCard === "engagements" ? "ring-2 ring-green-500" : ""}`}
+                >
                   <p className="text-3xl font-bold text-green-600">{metrics.totalEngagements}</p>
                   <p className="text-sm text-green-700">Engagements</p>
                   <p className="text-xs text-gray-500">Client contact</p>
-                </div>
+                  <p className="text-xs text-green-600 mt-1">Click to view</p>
+                </button>
                 <div className="bg-cyan-50 rounded-lg p-4 text-center">
                   <p className="text-3xl font-bold text-cyan-600">{metrics.engagementRate}%</p>
                   <p className="text-sm text-cyan-700">Engagement Rate</p>
                   <p className="text-xs text-gray-500">Success ratio</p>
                 </div>
-                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                <button
+                  onClick={() => setSelectedMetricCard(selectedMetricCard === "followups" ? null : "followups")}
+                  className={`bg-purple-50 rounded-lg p-4 text-center hover:ring-2 hover:ring-purple-400 transition-all cursor-pointer ${selectedMetricCard === "followups" ? "ring-2 ring-purple-500" : ""}`}
+                >
                   <p className="text-3xl font-bold text-purple-600">{metrics.visitsWithFollowUp}</p>
                   <p className="text-sm text-purple-700">Pending Follow-ups</p>
                   <p className="text-xs text-gray-500">Need return visit</p>
-                </div>
+                  <p className="text-xs text-purple-600 mt-1">Click to view</p>
+                </button>
               </div>
+
+              {/* Detail Panel for Attempts/Engagements/Follow-ups */}
+              {(selectedMetricCard === "attempts" || selectedMetricCard === "engagements" || selectedMetricCard === "followups") && (
+                <div className="mb-6 border-2 border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-bold text-gray-900">
+                      {selectedMetricCard === "attempts" && "All Attempts (No Contact)"}
+                      {selectedMetricCard === "engagements" && "All Engagements (Client Contact)"}
+                      {selectedMetricCard === "followups" && "Pending Follow-ups"}
+                    </h4>
+                    <button
+                      onClick={() => setSelectedMetricCard(null)}
+                      className="text-gray-500 hover:text-gray-700 p-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {(() => {
+                          let filteredVisits = fieldVisits;
+                          if (selectedMetricCard === "attempts") {
+                            filteredVisits = fieldVisits.filter(v => v.visit_outcome === "attempt");
+                          } else if (selectedMetricCard === "engagements") {
+                            filteredVisits = fieldVisits.filter(v => v.visit_outcome === "engagement");
+                          } else if (selectedMetricCard === "followups") {
+                            filteredVisits = fieldVisits.filter(v => v.requires_follow_up);
+                          }
+
+                          if (filteredVisits.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                  No visits found
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return filteredVisits.map((visit) => {
+                            const worker = workers.find(w => w.id === visit.staff_member);
+                            return (
+                              <tr key={visit.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {formatShortDate(visit.visit_date)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visit.location_address}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visitTypeLabels[visit.visit_type] || visit.visit_type}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {worker?.full_name || "Unknown"}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                                  {visit.general_notes || visit.property_condition_notes || "-"}
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Worker breakdown */}
               {Object.keys(metrics.visitsByWorker).length > 0 && (
@@ -730,10 +822,16 @@ export default function ReportsPage() {
             {/* Breakdown Charts */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Applications by Status */}
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Applications by Status
-                </h3>
+              <button
+                onClick={() => setSelectedMetricCard(selectedMetricCard === "status" ? null : "status")}
+                className={`card text-left hover:ring-2 hover:ring-cyan-400 transition-all cursor-pointer ${selectedMetricCard === "status" ? "ring-2 ring-cyan-500" : ""}`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Applications by Status
+                  </h3>
+                  <span className="text-xs text-cyan-600">Click to view details</span>
+                </div>
                 <div className="space-y-3">
                   {Object.entries(metrics.applicationsByStatus).map(
                     ([status, count]) => (
@@ -758,13 +856,19 @@ export default function ReportsPage() {
                     )
                   )}
                 </div>
-              </div>
+              </button>
 
               {/* Applications by County */}
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Applications by County
-                </h3>
+              <button
+                onClick={() => setSelectedMetricCard(selectedMetricCard === "county" ? null : "county")}
+                className={`card text-left hover:ring-2 hover:ring-amber-400 transition-all cursor-pointer ${selectedMetricCard === "county" ? "ring-2 ring-amber-500" : ""}`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Applications by County
+                  </h3>
+                  <span className="text-xs text-amber-600">Click to view details</span>
+                </div>
                 <div className="space-y-3">
                   {Object.entries(metrics.applicationsByCounty)
                     .sort(([, a], [, b]) => b - a)
@@ -790,13 +894,19 @@ export default function ReportsPage() {
                       </div>
                     ))}
                 </div>
-              </div>
+              </button>
 
               {/* Visits by Type */}
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Field Visits by Type
-                </h3>
+              <button
+                onClick={() => setSelectedMetricCard(selectedMetricCard === "visitType" ? null : "visitType")}
+                className={`card text-left hover:ring-2 hover:ring-green-400 transition-all cursor-pointer ${selectedMetricCard === "visitType" ? "ring-2 ring-green-500" : ""}`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Field Visits by Type
+                  </h3>
+                  <span className="text-xs text-green-600">Click to view details</span>
+                </div>
                 <div className="space-y-3">
                   {Object.entries(metrics.visitsByType).map(([type, count]) => (
                     <div key={type} className="flex items-center">
@@ -821,13 +931,19 @@ export default function ReportsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </button>
 
               {/* Visits by Worker */}
-              <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Field Visits by Worker
-                </h3>
+              <button
+                onClick={() => setSelectedMetricCard(selectedMetricCard === "visitWorker" ? null : "visitWorker")}
+                className={`card text-left hover:ring-2 hover:ring-purple-400 transition-all cursor-pointer ${selectedMetricCard === "visitWorker" ? "ring-2 ring-purple-500" : ""}`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Field Visits by Worker
+                  </h3>
+                  <span className="text-xs text-purple-600">Click to view details</span>
+                </div>
                 <div className="space-y-3">
                   {Object.entries(metrics.visitsByWorker)
                     .sort(([, a], [, b]) => b - a)
@@ -854,8 +970,237 @@ export default function ReportsPage() {
                       </div>
                     ))}
                 </div>
-              </div>
+              </button>
             </div>
+
+            {/* Detail Panel for Status/County/Visit Type/Worker */}
+            {(selectedMetricCard === "status" || selectedMetricCard === "county" || selectedMetricCard === "visitType" || selectedMetricCard === "visitWorker") && (
+              <div className="card border-2 border-gray-200 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-bold text-gray-900">
+                    {selectedMetricCard === "status" && "Applications by Status"}
+                    {selectedMetricCard === "county" && "Applications by County"}
+                    {selectedMetricCard === "visitType" && "Field Visits by Type"}
+                    {selectedMetricCard === "visitWorker" && "Field Visits by Worker"}
+                  </h4>
+                  <button
+                    onClick={() => setSelectedMetricCard(null)}
+                    className="text-gray-500 hover:text-gray-700 p-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Applications by Status Detail */}
+                {selectedMetricCard === "status" && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {applications.map((app) => (
+                          <tr key={app.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.full_name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {app.property_address}
+                              <br />
+                              <span className="text-gray-400">{app.property_county} {app.property_zip}</span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <a href={`tel:${app.phone_number}`} className="text-cyan-600 hover:text-cyan-700">
+                                {app.phone_number}
+                              </a>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                app.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                app.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                                app.status === "closed" ? "bg-gray-100 text-gray-800" :
+                                "bg-green-100 text-green-800"
+                              }`}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <Link
+                                href={`/dashboard/property/${app.id}`}
+                                className="text-cyan-600 hover:text-cyan-700 font-medium"
+                              >
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Applications by County Detail */}
+                {selectedMetricCard === "county" && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Property</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">County</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {applications
+                          .sort((a, b) => a.property_county.localeCompare(b.property_county))
+                          .map((app) => (
+                          <tr key={app.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{app.full_name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{app.property_address}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                {app.property_county}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                app.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                app.status === "in-progress" ? "bg-blue-100 text-blue-800" :
+                                "bg-gray-100 text-gray-800"
+                              }`}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <Link
+                                href={`/dashboard/property/${app.id}`}
+                                className="text-cyan-600 hover:text-cyan-700 font-medium"
+                              >
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Field Visits by Type Detail */}
+                {selectedMetricCard === "visitType" && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {fieldVisits
+                          .sort((a, b) => a.visit_type.localeCompare(b.visit_type))
+                          .map((visit) => {
+                            const worker = workers.find(w => w.id === visit.staff_member);
+                            return (
+                              <tr key={visit.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {formatShortDate(visit.visit_date)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{visit.location_address}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {visitTypeLabels[visit.visit_type] || visit.visit_type}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {visit.visit_outcome && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      visit.visit_outcome === "attempt"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                      {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {worker?.full_name || "Unknown"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Field Visits by Worker Detail */}
+                {selectedMetricCard === "visitWorker" && (
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {fieldVisits
+                          .sort((a, b) => {
+                            const workerA = workers.find(w => w.id === a.staff_member)?.full_name || "";
+                            const workerB = workers.find(w => w.id === b.staff_member)?.full_name || "";
+                            return workerA.localeCompare(workerB);
+                          })
+                          .map((visit) => {
+                            const worker = workers.find(w => w.id === visit.staff_member);
+                            return (
+                              <tr key={visit.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm">
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    {worker?.full_name || "Unknown"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                  {formatShortDate(visit.visit_date)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{visit.location_address}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {visitTypeLabels[visit.visit_type] || visit.visit_type}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {visit.visit_outcome && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      visit.visit_outcome === "attempt"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                      {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
