@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { jsPDF } from "jspdf";
 
 interface Applicant {
   id: string;
@@ -144,92 +145,196 @@ export default function PropertyDetailPage() {
     if (!data) return;
     const { applicant } = data;
 
-    const content = `
-COMMUNITY PROPERTY RESCUE
-APPLICATION FOR ASSISTANCE
-Generated: ${formatDateTime(new Date().toISOString())}
+    const doc = new jsPDF();
+    let y = 20;
+    const leftMargin = 20;
+    const rightCol = 85;
+    const pageWidth = 190;
+    const lineHeight = 7;
 
-================================================================================
-PERSONAL INFORMATION
-================================================================================
-Full Name:                  ${applicant.full_name}
-Phone Number:               ${applicant.phone_number}
-Email:                      ${applicant.email}
-Primary Language:           ${applicant.primary_language || 'Not specified'}
-Preferred Contact Method:   ${applicant.preferred_contact_method || 'Not specified'}
+    // Helper functions
+    const addTitle = (text: string) => {
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(8, 145, 178); // Cyan color
+      doc.text(text, pageWidth / 2 + 10, y, { align: "center" });
+      y += 10;
+    };
 
-================================================================================
-PROPERTY INFORMATION
-================================================================================
-Property Address:           ${applicant.property_address}
-City:                       ${applicant.property_city || 'Not specified'}
-County:                     ${applicant.property_county}
-ZIP Code:                   ${applicant.property_zip}
-Property Type:              ${applicant.property_type || 'Not specified'}${applicant.property_type_other ? ` (${applicant.property_type_other})` : ''}
+    const addSubtitle = (text: string) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(text, pageWidth / 2 + 10, y, { align: "center" });
+      y += 8;
+    };
 
-================================================================================
-TITLE & OWNERSHIP
-================================================================================
-Name on Title:              ${applicant.name_on_title || 'Not specified'}
-Occupant Type:              ${applicant.occupant_type || 'Not specified'}
-Part of HOA:                ${applicant.is_hoa === true ? 'Yes' : applicant.is_hoa === false ? 'No' : 'Not specified'}
+    const addSectionHeader = (text: string) => {
+      if (y > 260) { doc.addPage(); y = 20; }
+      y += 5;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(31, 41, 55);
+      doc.text(text, leftMargin, y);
+      y += 2;
+      doc.setDrawColor(8, 145, 178);
+      doc.setLineWidth(0.5);
+      doc.line(leftMargin, y, pageWidth, y);
+      y += 8;
+    };
 
-================================================================================
-CRISIS INDICATORS
-================================================================================
-Notice of Default:          ${applicant.has_notice_of_default ? 'YES' : 'No'}
-Notice of Trustee Sale:     ${applicant.has_notice_of_trustee_sale ? 'YES' : 'No'}
-Cannot Afford Mortgage:     ${applicant.cannot_afford_mortgage ? 'YES' : 'No'}
-Facing Eviction:            ${applicant.facing_eviction ? 'YES' : 'No'}
-Poor Property Condition:    ${applicant.poor_property_condition ? 'YES' : 'No'}
-Wants to Remain:            ${applicant.wants_to_remain ? 'YES' : 'No'}
-Needs Relocation Funds:     ${applicant.needs_relocation_funds ? 'YES' : 'No'}
-Title Holder Deceased:      ${applicant.title_holder_deceased ? 'YES' : 'No'}
-Tenant Owner Deceased:      ${applicant.tenant_owner_deceased ? 'YES' : 'No'}
-Needs Probate Info:         ${applicant.needs_probate_info ? 'YES' : 'No'}
-Needs Legal Assistance:     ${applicant.needs_legal_assistance ? 'YES' : 'No'}
-Has Auction Date:           ${applicant.has_auction_date ? 'YES' : 'No'}
+    const addField = (label: string, value: string, isHighlight = false) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(label + ":", leftMargin, y);
+      doc.setFont("helvetica", isHighlight ? "bold" : "normal");
+      doc.setTextColor(isHighlight ? 220, 38, 38 : 31, 41, 55);
+      const lines = doc.splitTextToSize(value, pageWidth - rightCol);
+      doc.text(lines, rightCol, y);
+      y += Math.max(lineHeight, lines.length * 5);
+    };
 
-Other Issues:
-${applicant.other_issues || 'None specified'}
+    const addCheckbox = (label: string, checked: boolean) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      if (checked) {
+        doc.setTextColor(220, 38, 38);
+        doc.text("■ " + label, leftMargin, y);
+      } else {
+        doc.setTextColor(156, 163, 175);
+        doc.text("□ " + label, leftMargin, y);
+      }
+      y += lineHeight;
+    };
 
-================================================================================
-URGENCY & SCHEDULING
-================================================================================
-Auction Date:               ${applicant.auction_date ? formatDate(applicant.auction_date) : 'Not scheduled'}
-Trustee Name:               ${applicant.trustee_name || 'Not specified'}
-Appointment Type:           ${applicant.appointment_type || 'Not specified'}
-Availability:               ${applicant.availability?.join(', ') || 'Not specified'}
+    // Header
+    addTitle("COMMUNITY PROPERTY RESCUE");
+    addSubtitle("Application for Assistance");
+    y += 2;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated: ${formatDateTime(new Date().toISOString())}`, pageWidth / 2 + 10, y, { align: "center" });
+    y += 10;
 
-================================================================================
-ADDITIONAL COMMENTS
-================================================================================
-${applicant.comments || 'No additional comments'}
+    // Personal Information
+    addSectionHeader("PERSONAL INFORMATION");
+    addField("Full Name", applicant.full_name);
+    addField("Phone Number", applicant.phone_number);
+    addField("Email", applicant.email);
+    addField("Primary Language", applicant.primary_language || "Not specified");
+    addField("Preferred Contact", applicant.preferred_contact_method || "Not specified");
 
-================================================================================
-APPLICATION METADATA
-================================================================================
-Application ID:             ${applicant.id}
-Submitted:                  ${formatDateTime(applicant.created_at)}
-Source:                     ${applicant.source === 'field_intake' ? 'Field Intake' : 'Online Application'}
-Status:                     ${applicant.status}
-${applicant.source === 'field_intake' && applicant.intake_latitude ? `GPS Coordinates:            ${applicant.intake_latitude}, ${applicant.intake_longitude}` : ''}
+    // Property Information
+    addSectionHeader("PROPERTY INFORMATION");
+    addField("Property Address", applicant.property_address);
+    addField("City", applicant.property_city || "Not specified");
+    addField("County", applicant.property_county);
+    addField("ZIP Code", applicant.property_zip);
+    addField("Property Type", (applicant.property_type || "Not specified") + (applicant.property_type_other ? ` (${applicant.property_type_other})` : ""));
 
-================================================================================
-                    Community Property Rescue
-              Restoring Hope & Dignity in Your Housing Crisis
-================================================================================
-`.trim();
+    // Title & Ownership
+    addSectionHeader("TITLE & OWNERSHIP");
+    addField("Name on Title", applicant.name_on_title || "Not specified");
+    addField("Occupant Type", applicant.occupant_type || "Not specified");
+    addField("Part of HOA", applicant.is_hoa === true ? "Yes" : applicant.is_hoa === false ? "No" : "Not specified");
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `CPR_Application_${applicant.full_name.replace(/\s+/g, '_')}_${formatDate(applicant.created_at).replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Crisis Indicators
+    addSectionHeader("CRISIS INDICATORS");
+    const col1X = leftMargin;
+    const col2X = leftMargin + 60;
+    const col3X = leftMargin + 120;
+    const startY = y;
+
+    doc.setFontSize(9);
+    // Column 1
+    y = startY;
+    if (applicant.has_notice_of_default) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.has_notice_of_default ? "■" : "□") + " Notice of Default", col1X, y); y += lineHeight;
+    if (applicant.has_notice_of_trustee_sale) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.has_notice_of_trustee_sale ? "■" : "□") + " Notice of Trustee Sale", col1X, y); y += lineHeight;
+    if (applicant.cannot_afford_mortgage) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.cannot_afford_mortgage ? "■" : "□") + " Cannot Afford Mortgage", col1X, y); y += lineHeight;
+    if (applicant.facing_eviction) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.facing_eviction ? "■" : "□") + " Facing Eviction", col1X, y);
+
+    // Column 2
+    y = startY;
+    if (applicant.poor_property_condition) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.poor_property_condition ? "■" : "□") + " Poor Condition", col2X, y); y += lineHeight;
+    if (applicant.wants_to_remain) { doc.setTextColor(34, 197, 94); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.wants_to_remain ? "■" : "□") + " Wants to Remain", col2X, y); y += lineHeight;
+    if (applicant.needs_relocation_funds) { doc.setTextColor(245, 158, 11); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.needs_relocation_funds ? "■" : "□") + " Needs Relocation $", col2X, y); y += lineHeight;
+    if (applicant.title_holder_deceased) { doc.setTextColor(147, 51, 234); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.title_holder_deceased ? "■" : "□") + " Title Holder Deceased", col2X, y);
+
+    // Column 3
+    y = startY;
+    if (applicant.tenant_owner_deceased) { doc.setTextColor(147, 51, 234); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.tenant_owner_deceased ? "■" : "□") + " Tenant Owner Deceased", col3X, y); y += lineHeight;
+    if (applicant.needs_probate_info) { doc.setTextColor(59, 130, 246); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.needs_probate_info ? "■" : "□") + " Needs Probate Info", col3X, y); y += lineHeight;
+    if (applicant.needs_legal_assistance) { doc.setTextColor(59, 130, 246); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.needs_legal_assistance ? "■" : "□") + " Needs Legal Help", col3X, y); y += lineHeight;
+    if (applicant.has_auction_date) { doc.setTextColor(220, 38, 38); doc.setFont("helvetica", "bold"); } else { doc.setTextColor(156, 163, 175); doc.setFont("helvetica", "normal"); }
+    doc.text((applicant.has_auction_date ? "■" : "□") + " Has Auction Date", col3X, y);
+
+    y = startY + (lineHeight * 4) + 5;
+
+    if (applicant.other_issues) {
+      y += 3;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.setFontSize(9);
+      doc.text("Other Issues:", leftMargin, y);
+      y += lineHeight;
+      doc.setTextColor(31, 41, 55);
+      const otherLines = doc.splitTextToSize(applicant.other_issues, pageWidth - leftMargin);
+      doc.text(otherLines, leftMargin, y);
+      y += otherLines.length * 5 + 3;
+    }
+
+    // Urgency & Scheduling
+    addSectionHeader("URGENCY & SCHEDULING");
+    addField("Auction Date", applicant.auction_date ? formatDate(applicant.auction_date) : "Not scheduled", !!applicant.auction_date);
+    addField("Trustee Name", applicant.trustee_name || "Not specified");
+    addField("Appointment Type", applicant.appointment_type || "Not specified");
+    addField("Availability", applicant.availability?.join(", ") || "Not specified");
+
+    // Comments
+    if (applicant.comments) {
+      addSectionHeader("ADDITIONAL COMMENTS");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(31, 41, 55);
+      const commentLines = doc.splitTextToSize(applicant.comments, pageWidth - leftMargin);
+      if (y + commentLines.length * 5 > 270) { doc.addPage(); y = 20; }
+      doc.text(commentLines, leftMargin, y);
+      y += commentLines.length * 5 + 5;
+    }
+
+    // Metadata
+    addSectionHeader("APPLICATION METADATA");
+    addField("Application ID", applicant.id);
+    addField("Submitted", formatDateTime(applicant.created_at));
+    addField("Source", applicant.source === "field_intake" ? "Field Intake" : "Online Application");
+    addField("Status", applicant.status);
+    if (applicant.source === "field_intake" && applicant.intake_latitude) {
+      addField("GPS Coordinates", `${applicant.intake_latitude}, ${applicant.intake_longitude}`);
+    }
+
+    // Footer
+    y = 280;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(8, 145, 178);
+    doc.text("Community Property Rescue - Restoring Hope & Dignity in Your Housing Crisis", pageWidth / 2 + 10, y, { align: "center" });
+
+    // Save
+    doc.save(`CPR_Application_${applicant.full_name.replace(/\s+/g, "_")}_${formatDate(applicant.created_at).replace(/[,\s]+/g, "_")}.pdf`);
   };
 
   const statusColors: Record<string, string> = {
@@ -328,7 +433,7 @@ ${applicant.source === 'field_intake' && applicant.intake_latitude ? `GPS Coordi
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Download Application
+                Download PDF
               </button>
             </div>
           </div>
