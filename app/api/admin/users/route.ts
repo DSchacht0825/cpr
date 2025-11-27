@@ -15,7 +15,8 @@ const supabaseAdmin = createClient(
 // GET - Fetch all users
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
+    // Fetch user profiles
+    const { data: profiles, error } = await supabaseAdmin
       .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false });
@@ -28,7 +29,19 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ data }, { status: 200 });
+    // Fetch auth users to get emails
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+
+    // Merge email from auth users into profiles
+    const usersWithEmail = profiles?.map(profile => {
+      const authUser = authUsers?.users?.find(u => u.id === profile.id);
+      return {
+        ...profile,
+        email: authUser?.email || 'Unknown'
+      };
+    }) || [];
+
+    return NextResponse.json({ data: usersWithEmail }, { status: 200 });
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
@@ -80,12 +93,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the user profile
+    // Create the user profile (email is stored in auth.users, not user_profiles)
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .insert([{
         id: authData.user.id,
-        email,
         full_name,
         role: role || 'field_worker',
         is_active: true,
