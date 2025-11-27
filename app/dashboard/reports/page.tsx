@@ -28,6 +28,15 @@ interface FieldVisit {
   immediate_needs?: string;
   general_notes?: string;
   requires_follow_up: boolean;
+  photos?: VisitPhoto[];
+}
+
+interface VisitPhoto {
+  id: string;
+  file_url: string;
+  caption?: string;
+  photo_type: string;
+  created_at: string;
 }
 
 interface Application {
@@ -92,6 +101,9 @@ export default function ReportsPage() {
   const [selectedWorker, setSelectedWorker] = useState<string>("");
   const [selectedCard, setSelectedCard] = useState<"applications" | "visits" | "pending" | "urgent" | null>(null);
   const [selectedMetricCard, setSelectedMetricCard] = useState<"attempts" | "engagements" | "followups" | "status" | "county" | "visitType" | "visitWorker" | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<FieldVisit | null>(null);
+  const [visitPhotos, setVisitPhotos] = useState<VisitPhoto[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -280,6 +292,32 @@ export default function ReportsPage() {
     "follow-up": "Follow Up",
     "property-inspection": "Property Inspection",
     "document-collection": "Document Collection",
+  };
+
+  const fetchVisitPhotos = async (visitId: string) => {
+    setLoadingPhotos(true);
+    try {
+      const response = await fetch(`/api/worker/photos?visitId=${visitId}`);
+      const result = await response.json();
+      if (response.ok) {
+        setVisitPhotos(result.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch photos:", err);
+      setVisitPhotos([]);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
+
+  const handleViewVisit = (visit: FieldVisit) => {
+    setSelectedVisit(visit);
+    fetchVisitPhotos(visit.id);
+  };
+
+  const closeVisitDetail = () => {
+    setSelectedVisit(null);
+    setVisitPhotos([]);
   };
 
   if (loading) {
@@ -694,7 +732,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Detail Panel for Attempts/Engagements/Follow-ups */}
-              {(selectedMetricCard === "attempts" || selectedMetricCard === "engagements" || selectedMetricCard === "followups") && (
+              {(selectedMetricCard === "attempts" || selectedMetricCard === "engagements" || selectedMetricCard === "followups") && !selectedVisit && (
                 <div className="mb-6 border-2 border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-bold text-gray-900">
@@ -720,6 +758,7 @@ export default function ReportsPage() {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Worker</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -736,7 +775,7 @@ export default function ReportsPage() {
                           if (filteredVisits.length === 0) {
                             return (
                               <tr>
-                                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                                   No visits found
                                 </td>
                               </tr>
@@ -762,12 +801,178 @@ export default function ReportsPage() {
                                 <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                                   {visit.general_notes || visit.property_condition_notes || "-"}
                                 </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <button
+                                    onClick={() => handleViewVisit(visit)}
+                                    className="text-cyan-600 hover:text-cyan-700 font-medium"
+                                  >
+                                    View Details
+                                  </button>
+                                </td>
                               </tr>
                             );
                           });
                         })()}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Single Visit Detail with Photos */}
+              {selectedVisit && (
+                <div className="mb-6 border-2 border-cyan-200 rounded-lg p-4 bg-cyan-50/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-bold text-gray-900">
+                      Visit Details
+                    </h4>
+                    <button
+                      onClick={closeVisitDetail}
+                      className="text-gray-500 hover:text-gray-700 p-1"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Visit Info */}
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <h5 className="font-semibold text-gray-900 mb-3">Property Information</h5>
+                        <div className="space-y-2">
+                          <p className="text-sm">
+                            <span className="text-gray-500">Address:</span>{" "}
+                            <span className="font-medium text-gray-900">{selectedVisit.location_address}</span>
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-gray-500">Visit Date:</span>{" "}
+                            <span className="font-medium text-gray-900">{formatShortDate(selectedVisit.visit_date)}</span>
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-gray-500">Visit Type:</span>{" "}
+                            <span className="font-medium text-gray-900">{visitTypeLabels[selectedVisit.visit_type] || selectedVisit.visit_type}</span>
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-gray-500">Outcome:</span>{" "}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              selectedVisit.visit_outcome === "attempt"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-green-100 text-green-800"
+                            }`}>
+                              {selectedVisit.visit_outcome === "attempt" ? "Attempt (No Contact)" : "Engagement"}
+                            </span>
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-gray-500">Worker:</span>{" "}
+                            <span className="font-medium text-gray-900">
+                              {workers.find(w => w.id === selectedVisit.staff_member)?.full_name || "Unknown"}
+                            </span>
+                          </p>
+                          {selectedVisit.contact_name && (
+                            <p className="text-sm">
+                              <span className="text-gray-500">Contact Name:</span>{" "}
+                              <span className="font-medium text-gray-900">{selectedVisit.contact_name}</span>
+                            </p>
+                          )}
+                          <p className="text-sm">
+                            <span className="text-gray-500">Follow-up Required:</span>{" "}
+                            <span className={`font-medium ${selectedVisit.requires_follow_up ? "text-red-600" : "text-green-600"}`}>
+                              {selectedVisit.requires_follow_up ? "Yes" : "No"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <h5 className="font-semibold text-gray-900 mb-3">Notes</h5>
+                        <div className="space-y-2 text-sm">
+                          {selectedVisit.property_condition_notes && (
+                            <div>
+                              <span className="text-gray-500 block">Property Condition:</span>
+                              <p className="text-gray-900">{selectedVisit.property_condition_notes}</p>
+                            </div>
+                          )}
+                          {selectedVisit.occupant_situation && (
+                            <div>
+                              <span className="text-gray-500 block">Occupant Situation:</span>
+                              <p className="text-gray-900">{selectedVisit.occupant_situation}</p>
+                            </div>
+                          )}
+                          {selectedVisit.immediate_needs && (
+                            <div>
+                              <span className="text-gray-500 block">Immediate Needs:</span>
+                              <p className="text-gray-900">{selectedVisit.immediate_needs}</p>
+                            </div>
+                          )}
+                          {selectedVisit.general_notes && (
+                            <div>
+                              <span className="text-gray-500 block">General Notes:</span>
+                              <p className="text-gray-900">{selectedVisit.general_notes}</p>
+                            </div>
+                          )}
+                          {!selectedVisit.property_condition_notes && !selectedVisit.occupant_situation && !selectedVisit.immediate_needs && !selectedVisit.general_notes && (
+                            <p className="text-gray-400 italic">No notes recorded</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Link to Property if exists */}
+                      {selectedVisit.applicant_id && (
+                        <Link
+                          href={`/dashboard/property/${selectedVisit.applicant_id}`}
+                          className="block bg-cyan-600 text-white text-center py-2 px-4 rounded-lg font-medium hover:bg-cyan-700 transition-colors"
+                        >
+                          View Full Property Record
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Photos */}
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <h5 className="font-semibold text-gray-900 mb-3">
+                        Photos {visitPhotos.length > 0 && `(${visitPhotos.length})`}
+                      </h5>
+                      {loadingPhotos ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                        </div>
+                      ) : visitPhotos.length === 0 ? (
+                        <div className="text-center py-8 text-gray-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p>No photos taken during this visit</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                          {visitPhotos.map((photo) => (
+                            <div key={photo.id} className="relative group">
+                              <a href={photo.file_url} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={photo.file_url}
+                                  alt={photo.caption || "Visit photo"}
+                                  className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-colors flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
+                                </div>
+                              </a>
+                              {photo.caption && (
+                                <p className="text-xs text-gray-500 mt-1 truncate">{photo.caption}</p>
+                              )}
+                              <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-black/50 text-white text-xs rounded">
+                                {photo.photo_type}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
