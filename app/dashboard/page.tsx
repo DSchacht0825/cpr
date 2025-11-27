@@ -30,7 +30,18 @@ interface Application {
   has_notice_of_default: boolean;
   has_notice_of_trustee_sale: boolean;
   assigned_to?: string;
+  close_outcome?: string;
+  closed_at?: string;
 }
+
+const CLOSE_OUTCOMES = [
+  { value: "loan_modification_approved", label: "Loan Modification Approved" },
+  { value: "adu_development", label: "ADU Development" },
+  { value: "accepted_relocation", label: "Accepted Relocation" },
+  { value: "customer_filed_bankruptcy", label: "Customer Filed Bankruptcy" },
+  { value: "moving_forward_other", label: "Moving Forward Others Option" },
+  { value: "client_refused_help", label: "Client Refused Help" },
+];
 
 interface Worker {
   id: string;
@@ -74,6 +85,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [closingId, setClosingId] = useState<string | null>(null);
   const [visitLocations, setVisitLocations] = useState<VisitLocation[]>([]);
   const [showMap, setShowMap] = useState(true);
 
@@ -156,6 +168,32 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCloseApplication = async (applicationId: string, outcome: string) => {
+    if (!outcome) return;
+
+    setClosingId(applicationId);
+    try {
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "closed",
+          close_outcome: outcome,
+          closed_at: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        // Remove from active applications list
+        setApplications((prev) => prev.filter((app) => app.id !== applicationId));
+      }
+    } catch (err) {
+      console.error("Failed to close application:", err);
+    } finally {
+      setClosingId(null);
+    }
+  };
+
   const getWorkerName = (workerId?: string) => {
     if (!workerId) return null;
     const worker = workers.find((w) => w.id === workerId);
@@ -184,6 +222,10 @@ export default function DashboardPage() {
 
   const filterApplications = () => {
     let filtered = [...applications];
+
+    // Always exclude closed applications from main dashboard
+    // (they have their own page)
+    filtered = filtered.filter((app) => app.status !== "closed");
 
     if (statusFilter !== "all") {
       filtered = filtered.filter((app) => app.status === statusFilter);
@@ -292,6 +334,9 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Link href="/dashboard/closed" className="text-gray-600 hover:text-gray-800 font-medium">
+                Closed Applications
+              </Link>
               <Link href="/dashboard/reports" className="text-cyan-600 hover:text-cyan-700 font-medium">
                 Reports & Analytics
               </Link>
@@ -364,11 +409,10 @@ export default function DashboardPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="input-field"
               >
-                <option value="all">All Statuses</option>
+                <option value="all">All Active</option>
                 <option value="pending">Pending</option>
                 <option value="contacted">Contacted</option>
                 <option value="in-progress">In Progress</option>
-                <option value="closed">Closed</option>
               </select>
             </div>
 
@@ -562,12 +606,30 @@ export default function DashboardPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link
-                          href={`/dashboard/property/${app.id}`}
-                          className="text-cyan-600 hover:text-cyan-700 font-medium"
-                        >
-                          View / History
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/dashboard/property/${app.id}`}
+                            className="text-cyan-600 hover:text-cyan-700 font-medium"
+                          >
+                            View
+                          </Link>
+                          <select
+                            value=""
+                            onChange={(e) => handleCloseApplication(app.id, e.target.value)}
+                            disabled={closingId === app.id}
+                            className="text-sm border border-gray-300 rounded-md px-2 py-1 text-gray-700 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                          >
+                            <option value="">Close Out...</option>
+                            {CLOSE_OUTCOMES.map((outcome) => (
+                              <option key={outcome.value} value={outcome.value}>
+                                {outcome.label}
+                              </option>
+                            ))}
+                          </select>
+                          {closingId === app.id && (
+                            <span className="text-gray-400 text-xs">Closing...</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

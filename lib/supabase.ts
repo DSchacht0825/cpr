@@ -72,6 +72,10 @@ export interface Applicant {
   status?: string;
   assigned_to?: string | null;
 
+  // Close Out
+  close_outcome?: string | null;
+  closed_at?: string | null;
+
   // Metadata
   source?: string;
   ip_address?: string;
