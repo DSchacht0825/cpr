@@ -43,6 +43,8 @@ interface RecentVisit {
   visit_type: string;
   location_address: string;
   applicant_id: string;
+  requires_follow_up: boolean;
+  follow_up_date?: string;
 }
 
 export default function WorkerDashboardPage() {
@@ -270,14 +272,30 @@ export default function WorkerDashboardPage() {
               {recentVisits.map((visit) => (
                 <div
                   key={visit.id}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+                  className={`rounded-xl p-4 shadow-sm border ${
+                    visit.requires_follow_up
+                      ? "bg-red-50 border-red-300"
+                      : "bg-white border-gray-100"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">{visit.location_address}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{visit.location_address}</p>
+                        {visit.requires_follow_up && (
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                            Follow-up Needed
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">
                         {visit.visit_type} - {formatDate(visit.visit_date)}
                       </p>
+                      {visit.follow_up_date && (
+                        <p className="text-xs text-red-600 font-medium mt-1">
+                          Follow-up by: {formatDate(visit.follow_up_date)}
+                        </p>
+                      )}
                     </div>
                     {visit.applicant_id && (
                       <Link

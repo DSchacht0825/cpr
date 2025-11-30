@@ -139,12 +139,14 @@ export default function WorkerVisitsPage() {
             {visits.map((visit) => (
               <div
                 key={visit.id}
-                className={`bg-white rounded-xl p-4 shadow-sm border ${
-                  visit.visit_outcome === "attempt"
-                    ? "border-amber-200"
+                className={`rounded-xl p-4 shadow-sm border ${
+                  visit.requires_follow_up
+                    ? "bg-red-50 border-red-300"
+                    : visit.visit_outcome === "attempt"
+                    ? "bg-white border-amber-200"
                     : visit.visit_outcome === "engagement"
-                    ? "border-green-200"
-                    : "border-gray-100"
+                    ? "bg-white border-green-200"
+                    : "bg-white border-gray-100"
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -165,8 +167,8 @@ export default function WorkerVisitsPage() {
                         </span>
                       )}
                       {visit.requires_follow_up && (
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
-                          Follow-up
+                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                          Follow-up Needed
                         </span>
                       )}
                     </div>
@@ -178,8 +180,8 @@ export default function WorkerVisitsPage() {
                       <p className="text-xs text-gray-500">Contact: {visit.contact_name}</p>
                     )}
                     {visit.follow_up_date && (
-                      <p className="text-xs text-purple-600 mt-1">
-                        Follow-up: {formatDate(visit.follow_up_date)}
+                      <p className="text-xs text-red-600 font-medium mt-1">
+                        Follow-up by: {formatDate(visit.follow_up_date)}
                       </p>
                     )}
                   </div>
