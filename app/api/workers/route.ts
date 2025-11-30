@@ -7,7 +7,7 @@ export async function GET() {
       .from('user_profiles')
       .select('id, full_name, role, phone, is_active')
       .eq('is_active', true)
-      .in('role', ['staff', 'admin', 'volunteer'])
+      .in('role', ['field_worker', 'admin'])
       .order('full_name');
 
     if (error) {
