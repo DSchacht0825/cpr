@@ -2,7 +2,7 @@
   "name": "Community Property Rescue",
   "short_name": "CPR",
   "description": "Restoring hope & dignity in your housing crisis",
-  "start_url": "/",
+  "start_url": "/worker",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0891b2",
