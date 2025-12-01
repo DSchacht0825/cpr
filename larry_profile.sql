@@ -1,0 +1,1 @@
+INSERT INTO user_profiles (id, full_name, role, is_active) VALUES ('56d8e20f-f271-41c4-b3d3-81cd34e2b619', 'Larry Monteforte', 'admin', true) ON CONFLICT (id) DO UPDATE SET full_name = 'Larry Monteforte', role = 'admin', is_active = true;
