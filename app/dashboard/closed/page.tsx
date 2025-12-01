@@ -38,13 +38,23 @@ export default function ClosedApplicationsPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  // Admin emails that always have access
+  const ADMIN_EMAILS = [
+    "dschacht@sdrescue.org",
+    "larrymonteforte@communitypropertyrescue.com",
+    "larryjr@communitypropertyrescue.com",
+    "schacht.dan@gmail.com",
+  ];
+
   useEffect(() => {
     // Check admin access
     const storedSession = localStorage.getItem("worker_session");
     if (storedSession) {
       try {
         const session = JSON.parse(storedSession);
-        if (session.profile?.role !== "admin") {
+        const userEmail = session.user?.email?.toLowerCase();
+        const isAdmin = (userEmail && ADMIN_EMAILS.includes(userEmail)) || session.profile?.role === "admin";
+        if (!isAdmin) {
           router.push("/worker/dashboard");
           return;
         }
