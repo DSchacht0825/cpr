@@ -37,6 +37,7 @@ export default function ClosedApplicationsPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [selectedApp, setSelectedApp] = useState<ClosedApplication | null>(null);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -222,6 +223,78 @@ export default function ClosedApplicationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Popup Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">{selectedApp.full_name}</h3>
+                <button
+                  onClick={() => setSelectedApp(null)}
+                  className="text-gray-500 hover:text-gray-700 p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Outcome Badge */}
+                <div>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getOutcomeBadgeColor(selectedApp.close_outcome)}`}>
+                    {CLOSE_OUTCOMES[selectedApp.close_outcome] || selectedApp.close_outcome}
+                  </span>
+                </div>
+
+                {/* Property Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Property</h4>
+                  <p className="text-gray-900 font-medium">{selectedApp.property_address}</p>
+                  <p className="text-gray-600">{selectedApp.property_city}, {selectedApp.property_county} {selectedApp.property_zip}</p>
+                </div>
+
+                {/* Contact Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Contact</h4>
+                  <p className="text-gray-900">{selectedApp.phone_number}</p>
+                  <p className="text-gray-600">{selectedApp.email}</p>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Submitted</h4>
+                    <p className="text-gray-900">{formatDate(selectedApp.created_at)}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Closed</h4>
+                    <p className="text-gray-900">{formatDate(selectedApp.closed_at)}</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <Link
+                    href={`/dashboard/property/${selectedApp.id}`}
+                    className="flex-1 bg-cyan-600 text-white text-center py-2 rounded-lg font-medium hover:bg-cyan-700"
+                  >
+                    View Full Details
+                  </Link>
+                  <button
+                    onClick={() => setSelectedApp(null)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -370,7 +443,11 @@ export default function ClosedApplicationsPage() {
                   </tr>
                 ) : (
                   filteredApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50">
+                    <tr
+                      key={app.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setSelectedApp(app)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{app.full_name}</div>
                       </td>
@@ -397,12 +474,15 @@ export default function ClosedApplicationsPage() {
                         {formatDate(app.closed_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link
-                          href={`/dashboard/property/${app.id}`}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedApp(app);
+                          }}
                           className="text-cyan-600 hover:text-cyan-700 font-medium"
                         >
                           View Details
-                        </Link>
+                        </button>
                       </td>
                     </tr>
                   ))
