@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       follow_up_notes: body.follow_up_notes || null,
       latitude: body.latitude || null,
       longitude: body.longitude || null,
+      interest_level: body.interest_level || null,
     };
 
     const { data, error } = await supabaseAdmin

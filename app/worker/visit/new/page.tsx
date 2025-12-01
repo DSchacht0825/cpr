@@ -76,6 +76,7 @@ export default function NewFieldVisitPage() {
     requires_follow_up: false,
     follow_up_date: "",
     follow_up_notes: "",
+    interest_level: "", // not_interested, interested_online, applied_with_worker
   });
 
   useEffect(() => {
@@ -300,6 +301,12 @@ export default function NewFieldVisitPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+
+    // Validate: Interest level is required
+    if (!formData.interest_level) {
+      alert("Please select the client's interest level before saving.");
+      return;
+    }
 
     // Validate: Attempts require at least one photo
     if (formData.visit_outcome === "attempt" && photos.length === 0) {
@@ -861,11 +868,35 @@ export default function NewFieldVisitPage() {
             )}
           </section>
 
-          {/* Follow Up */}
+          {/* Follow Up & Interest Level */}
           <section className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-semibold text-gray-900 mb-4">Follow Up</h2>
+            <h2 className="font-semibold text-gray-900 mb-4">Follow Up & Interest Level</h2>
 
             <div className="space-y-4">
+              {/* Interest Level - Required */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Interest Level *
+                </label>
+                <select
+                  name="interest_level"
+                  value={formData.interest_level}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 ${
+                    !formData.interest_level ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">-- Select Interest Level --</option>
+                  <option value="not_interested">Not Interested</option>
+                  <option value="interested_online">Interested - Online Application</option>
+                  <option value="applied_with_worker">Applied with Worker</option>
+                </select>
+                {!formData.interest_level && (
+                  <p className="mt-1 text-sm text-red-600">Required: Please select the client's interest level</p>
+                )}
+              </div>
+
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"

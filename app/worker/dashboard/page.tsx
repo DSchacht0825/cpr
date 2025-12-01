@@ -45,7 +45,14 @@ interface RecentVisit {
   applicant_id: string;
   requires_follow_up: boolean;
   follow_up_date?: string;
+  interest_level?: string;
 }
+
+const INTEREST_LEVEL_LABELS: Record<string, { label: string; color: string }> = {
+  not_interested: { label: "Not Interested", color: "bg-gray-100 text-gray-700" },
+  interested_online: { label: "Interested - Online App", color: "bg-blue-100 text-blue-700" },
+  applied_with_worker: { label: "Applied with Worker", color: "bg-green-100 text-green-700" },
+};
 
 export default function WorkerDashboardPage() {
   const router = useRouter();
@@ -280,11 +287,16 @@ export default function WorkerDashboardPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-gray-900">{visit.location_address}</p>
                         {visit.requires_follow_up && (
                           <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
                             Follow-up Needed
+                          </span>
+                        )}
+                        {visit.interest_level && INTEREST_LEVEL_LABELS[visit.interest_level] && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${INTEREST_LEVEL_LABELS[visit.interest_level].color}`}>
+                            {INTEREST_LEVEL_LABELS[visit.interest_level].label}
                           </span>
                         )}
                       </div>
