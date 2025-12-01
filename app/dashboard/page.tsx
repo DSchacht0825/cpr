@@ -92,6 +92,14 @@ export default function DashboardPage() {
   const [showMap, setShowMap] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Admin emails that always have access
+  const ADMIN_EMAILS = [
+    "dschacht@sdrescue.org",
+    "larrymonteforte@communitypropertyrescue.com",
+    "larryjr@communitypropertyrescue.com",
+    "schacht.dan@gmail.com",
+  ];
+
   // Check admin access on mount
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -103,13 +111,24 @@ export default function DashboardPage() {
 
       try {
         const session = JSON.parse(storedSession);
+        const userEmail = session.user?.email?.toLowerCase();
+
+        // Check if user email is in admin list
+        if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+          session.profile.role = "admin";
+          localStorage.setItem("worker_session", JSON.stringify(session));
+          setAuthChecked(true);
+          fetchApplications();
+          fetchWorkers();
+          fetchVisitLocations();
+          return;
+        }
 
         // Fetch fresh profile from database to get current role
         const response = await fetch(`/api/user/profile?userId=${session.user.id}`);
         if (response.ok) {
           const result = await response.json();
           if (result.data?.role === "admin") {
-            // Update stored session with fresh role
             session.profile.role = "admin";
             localStorage.setItem("worker_session", JSON.stringify(session));
             setAuthChecked(true);

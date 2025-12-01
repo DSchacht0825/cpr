@@ -107,13 +107,26 @@ export default function ReportsPage() {
   const [visitPhotos, setVisitPhotos] = useState<VisitPhoto[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
 
+  // Admin emails that always have access
+  const ADMIN_EMAILS = [
+    "dschacht@sdrescue.org",
+    "larrymonteforte@communitypropertyrescue.com",
+    "larryjr@communitypropertyrescue.com",
+    "schacht.dan@gmail.com",
+  ];
+
   useEffect(() => {
     // Check admin access
     const storedSession = localStorage.getItem("worker_session");
     if (storedSession) {
       try {
         const session = JSON.parse(storedSession);
-        if (session.profile?.role !== "admin") {
+        const userEmail = session.user?.email?.toLowerCase();
+
+        // Check if user email is in admin list or has admin role
+        const isAdmin = (userEmail && ADMIN_EMAILS.includes(userEmail)) || session.profile?.role === "admin";
+
+        if (!isAdmin) {
           router.push("/worker/dashboard");
           return;
         }
