@@ -94,30 +94,48 @@ export default function DashboardPage() {
 
   // Check admin access on mount
   useEffect(() => {
-    const storedSession = localStorage.getItem("worker_session");
-    if (!storedSession) {
-      // No session, redirect to login
-      router.push("/worker");
-      return;
-    }
-
-    try {
-      const session = JSON.parse(storedSession);
-      // Only allow admins to access dashboard
-      if (session.profile?.role !== "admin") {
-        router.push("/worker/dashboard");
+    const checkAdminAccess = async () => {
+      const storedSession = localStorage.getItem("worker_session");
+      if (!storedSession) {
+        router.push("/worker");
         return;
       }
-      // Admin verified, load data
-      setAuthChecked(true);
-      fetchApplications();
-      fetchWorkers();
-      fetchVisitLocations();
-    } catch {
-      // Invalid session, redirect to login
-      router.push("/worker");
-      return;
-    }
+
+      try {
+        const session = JSON.parse(storedSession);
+
+        // Fetch fresh profile from database to get current role
+        const response = await fetch(`/api/user/profile?userId=${session.user.id}`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data?.role === "admin") {
+            // Update stored session with fresh role
+            session.profile.role = "admin";
+            localStorage.setItem("worker_session", JSON.stringify(session));
+            setAuthChecked(true);
+            fetchApplications();
+            fetchWorkers();
+            fetchVisitLocations();
+            return;
+          }
+        }
+
+        // Fallback: check stored session role
+        if (session.profile?.role === "admin") {
+          setAuthChecked(true);
+          fetchApplications();
+          fetchWorkers();
+          fetchVisitLocations();
+          return;
+        }
+
+        router.push("/worker/dashboard");
+      } catch {
+        router.push("/worker");
+      }
+    };
+
+    checkAdminAccess();
   }, [router]);
 
   useEffect(() => {
