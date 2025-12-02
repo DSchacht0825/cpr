@@ -30,8 +30,16 @@ interface FieldVisit {
   general_notes?: string;
   requires_follow_up: boolean;
   follow_up_date?: string;
+  follow_up_notes?: string;
   photos?: VisitPhoto[];
 }
+
+// Helper to extract time from follow_up_notes
+const extractFollowUpTime = (notes?: string): string | null => {
+  if (!notes) return null;
+  const match = notes.match(/\[Preferred time: ([^\]]+)\]/);
+  return match ? match[1] : null;
+};
 
 interface VisitPhoto {
   id: string;
@@ -1667,6 +1675,9 @@ export default function ReportsPage() {
                                   {visit.requires_follow_up ? (
                                     <span className="text-red-600 font-medium">
                                       {visit.follow_up_date ? formatShortDate(visit.follow_up_date) : "Yes"}
+                                      {extractFollowUpTime(visit.follow_up_notes) && (
+                                        <span className="block text-xs">{extractFollowUpTime(visit.follow_up_notes)}</span>
+                                      )}
                                     </span>
                                   ) : (
                                     <span className="text-gray-400">-</span>

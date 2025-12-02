@@ -45,8 +45,16 @@ interface RecentVisit {
   applicant_id: string;
   requires_follow_up: boolean;
   follow_up_date?: string;
+  follow_up_notes?: string;
   interest_level?: string;
 }
+
+// Helper to extract time from follow_up_notes
+const extractFollowUpTime = (notes?: string): string | null => {
+  if (!notes) return null;
+  const match = notes.match(/\[Preferred time: ([^\]]+)\]/);
+  return match ? match[1] : null;
+};
 
 const INTEREST_LEVEL_LABELS: Record<string, { label: string; color: string }> = {
   not_interested: { label: "Not Interested", color: "bg-gray-100 text-gray-700" },
@@ -306,6 +314,9 @@ export default function WorkerDashboardPage() {
                       {visit.follow_up_date && (
                         <p className="text-xs text-red-600 font-medium mt-1">
                           Follow-up by: {formatDate(visit.follow_up_date)}
+                          {extractFollowUpTime(visit.follow_up_notes) && (
+                            <span> at {extractFollowUpTime(visit.follow_up_notes)}</span>
+                          )}
                         </p>
                       )}
                     </div>
