@@ -41,12 +41,14 @@ interface RecentVisit {
   id: string;
   visit_date: string;
   visit_type: string;
+  visit_outcome?: string;
   location_address: string;
   applicant_id: string;
   requires_follow_up: boolean;
   follow_up_date?: string;
   follow_up_notes?: string;
   interest_level?: string;
+  attempt_count?: number;
 }
 
 // Helper to extract time from follow_up_notes
@@ -294,12 +296,17 @@ export default function WorkerDashboardPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-gray-900">{visit.location_address}</p>
                         {visit.requires_follow_up && (
                           <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
                             Follow-up Needed
+                          </span>
+                        )}
+                        {visit.attempt_count && visit.attempt_count > 1 && (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                            {visit.attempt_count} attempts
                           </span>
                         )}
                         {visit.interest_level && INTEREST_LEVEL_LABELS[visit.interest_level] && (
@@ -309,7 +316,7 @@ export default function WorkerDashboardPage() {
                         )}
                       </div>
                       <p className="text-sm text-gray-500">
-                        {visit.visit_type} - {formatDate(visit.visit_date)}
+                        {visit.visit_outcome === "attempt" ? "Attempt" : visit.visit_outcome === "engagement" ? "Engagement" : visit.visit_type} - {formatDate(visit.visit_date)}
                       </p>
                       {visit.follow_up_date && (
                         <p className="text-xs text-red-600 font-medium mt-1">
@@ -320,14 +327,24 @@ export default function WorkerDashboardPage() {
                         </p>
                       )}
                     </div>
-                    {visit.applicant_id && (
-                      <Link
-                        href={`/dashboard/property/${visit.applicant_id}`}
-                        className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
-                      >
-                        View
-                      </Link>
-                    )}
+                    <div className="flex items-center gap-2 ml-2">
+                      {visit.requires_follow_up && (
+                        <Link
+                          href={`/worker/visit/new?followup=${visit.id}&address=${encodeURIComponent(visit.location_address)}${visit.applicant_id ? `&applicant=${visit.applicant_id}` : ''}`}
+                          className="px-3 py-1.5 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors"
+                        >
+                          Follow Up
+                        </Link>
+                      )}
+                      {visit.applicant_id && (
+                        <Link
+                          href={`/dashboard/property/${visit.applicant_id}`}
+                          className="text-cyan-600 hover:text-cyan-700 text-sm font-medium"
+                        >
+                          View
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

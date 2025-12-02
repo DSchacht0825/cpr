@@ -31,6 +31,7 @@ interface FieldVisit {
   requires_follow_up: boolean;
   follow_up_date?: string;
   follow_up_notes?: string;
+  attempt_count?: number;
   photos?: VisitPhoto[];
 }
 
@@ -1643,6 +1644,7 @@ export default function ReportsPage() {
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"># Attempts</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Follow-up</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
@@ -1669,6 +1671,17 @@ export default function ReportsPage() {
                                     }`}>
                                       {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
                                     </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-center">
+                                  {visit.attempt_count && visit.attempt_count > 0 ? (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      visit.attempt_count >= 3 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                    }`}>
+                                      {visit.attempt_count}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">1</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-3 text-sm whitespace-nowrap">

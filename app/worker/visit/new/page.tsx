@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -39,6 +39,7 @@ interface SearchResult {
 
 export default function NewFieldVisitPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [session, setSession] = useState<WorkerSession | null>(null);
   const [assignedCases, setAssignedCases] = useState<AssignedCase[]>([]);
@@ -47,6 +48,7 @@ export default function NewFieldVisitPage() {
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState("");
+  const [isFollowUp, setIsFollowUp] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,6 +81,23 @@ export default function NewFieldVisitPage() {
     follow_up_notes: "",
     interest_level: "", // not_interested, interested_online, applied_with_worker
   });
+
+  // Check for follow-up parameters
+  useEffect(() => {
+    const followupId = searchParams.get('followup');
+    const address = searchParams.get('address');
+    const applicantId = searchParams.get('applicant');
+
+    if (followupId && address) {
+      setIsFollowUp(true);
+      setFormData(prev => ({
+        ...prev,
+        location_address: address,
+        applicant_id: applicantId || "",
+        visit_type: "follow-up",
+      }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const storedSession = localStorage.getItem("worker_session");
@@ -466,7 +485,7 @@ export default function NewFieldVisitPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
-              <h1 className="text-lg font-bold text-gray-900">New Field Visit</h1>
+              <h1 className="text-lg font-bold text-gray-900">{isFollowUp ? "Follow-Up Visit" : "New Field Visit"}</h1>
             </div>
             {location && (
               <span className="text-green-600 text-sm flex items-center">
