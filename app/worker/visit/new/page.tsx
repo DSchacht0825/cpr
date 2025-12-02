@@ -956,9 +956,9 @@ function NewFieldVisitContent() {
 
               {formData.requires_follow_up && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Follow-up Date
                       </label>
                       <input
@@ -966,18 +966,18 @@ function NewFieldVisitContent() {
                         name="follow_up_date"
                         value={formData.follow_up_date}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400 text-base"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Preferred Time
                       </label>
                       <select
                         name="follow_up_time"
                         value={formData.follow_up_time}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 text-base"
                       >
                         <option value="">Any time</option>
                         <option value="8:00 AM">8:00 AM</option>
