@@ -29,6 +29,7 @@ interface FieldVisit {
   immediate_needs?: string;
   general_notes?: string;
   requires_follow_up: boolean;
+  follow_up_date?: string;
   photos?: VisitPhoto[];
 }
 
@@ -1634,13 +1635,14 @@ export default function ReportsPage() {
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outcome</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Follow-up</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {workerVisits.slice(0, 50).map((visit) => (
-                              <tr key={visit.id} className="hover:bg-gray-50">
+                              <tr key={visit.id} className={`hover:bg-gray-50 ${visit.requires_follow_up ? "bg-red-50" : ""}`}>
                                 <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                                   {formatShortDate(visit.visit_date)}
                                 </td>
@@ -1659,6 +1661,15 @@ export default function ReportsPage() {
                                     }`}>
                                       {visit.visit_outcome === "attempt" ? "Attempt" : "Engagement"}
                                     </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm whitespace-nowrap">
+                                  {visit.requires_follow_up ? (
+                                    <span className="text-red-600 font-medium">
+                                      {visit.follow_up_date ? formatShortDate(visit.follow_up_date) : "Yes"}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
