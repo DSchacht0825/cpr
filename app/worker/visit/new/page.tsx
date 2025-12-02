@@ -75,6 +75,7 @@ export default function NewFieldVisitPage() {
     general_notes: "",
     requires_follow_up: false,
     follow_up_date: "",
+    follow_up_time: "",
     follow_up_notes: "",
     interest_level: "", // not_interested, interested_online, applied_with_worker
   });
@@ -328,6 +329,17 @@ export default function NewFieldVisitPage() {
         followUpDate = threeDaysFromNow.toISOString().split("T")[0];
       }
 
+      // Build follow-up notes with time if provided
+      let followUpNotes = formData.follow_up_notes;
+      if (formData.visit_outcome === "attempt" && !followUpNotes) {
+        followUpNotes = "Auto-scheduled: Return visit needed - no one was home";
+      }
+      if (formData.follow_up_time && followUpNotes) {
+        followUpNotes = `[Preferred time: ${formData.follow_up_time}] ${followUpNotes}`;
+      } else if (formData.follow_up_time) {
+        followUpNotes = `Preferred time: ${formData.follow_up_time}`;
+      }
+
       // Create field visit
       const visitData = {
         ...formData,
@@ -339,9 +351,7 @@ export default function NewFieldVisitPage() {
         is_synced: true,
         requires_follow_up: requiresFollowUp,
         follow_up_date: followUpDate || null,
-        follow_up_notes: formData.visit_outcome === "attempt" && !formData.follow_up_notes
-          ? "Auto-scheduled: Return visit needed - no one was home"
-          : formData.follow_up_notes,
+        follow_up_notes: followUpNotes,
       };
 
       const response = await fetch("/api/worker/visits", {
@@ -914,17 +924,43 @@ export default function NewFieldVisitPage() {
 
               {formData.requires_follow_up && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Follow-up Date
-                    </label>
-                    <input
-                      type="date"
-                      name="follow_up_date"
-                      value={formData.follow_up_date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Follow-up Date
+                      </label>
+                      <input
+                        type="date"
+                        name="follow_up_date"
+                        value={formData.follow_up_date}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Preferred Time
+                      </label>
+                      <select
+                        name="follow_up_time"
+                        value={formData.follow_up_time}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                      >
+                        <option value="">Any time</option>
+                        <option value="8:00 AM">8:00 AM</option>
+                        <option value="9:00 AM">9:00 AM</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="11:00 AM">11:00 AM</option>
+                        <option value="12:00 PM">12:00 PM</option>
+                        <option value="1:00 PM">1:00 PM</option>
+                        <option value="2:00 PM">2:00 PM</option>
+                        <option value="3:00 PM">3:00 PM</option>
+                        <option value="4:00 PM">4:00 PM</option>
+                        <option value="5:00 PM">5:00 PM</option>
+                        <option value="6:00 PM">6:00 PM</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
