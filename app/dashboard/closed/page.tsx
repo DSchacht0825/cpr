@@ -45,6 +45,7 @@ export default function ClosedApplicationsPage() {
     "larrymonteforte@communitypropertyrescue.com",
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
+    "david@communitypropertyrescue.com",
   ];
 
   useEffect(() => {

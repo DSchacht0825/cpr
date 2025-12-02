@@ -98,6 +98,7 @@ export default function DashboardPage() {
     "larrymonteforte@communitypropertyrescue.com",
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
+    "david@communitypropertyrescue.com",
   ];
 
   // Check admin access on mount
@@ -112,7 +113,6 @@ export default function DashboardPage() {
       try {
         const session = JSON.parse(storedSession);
         const userEmail = session.user?.email?.toLowerCase();
-
         // Check if user email is in admin list
         if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
           session.profile.role = "admin";

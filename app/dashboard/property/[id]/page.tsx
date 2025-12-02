@@ -97,6 +97,7 @@ export default function PropertyDetailPage() {
     "larrymonteforte@communitypropertyrescue.com",
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
+    "david@communitypropertyrescue.com",
   ];
 
   useEffect(() => {

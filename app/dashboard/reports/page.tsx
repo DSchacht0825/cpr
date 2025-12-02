@@ -123,6 +123,7 @@ export default function ReportsPage() {
     "larrymonteforte@communitypropertyrescue.com",
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
+    "david@communitypropertyrescue.com",
   ];
 
   useEffect(() => {
