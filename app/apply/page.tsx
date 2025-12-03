@@ -8,7 +8,7 @@ export default function ApplyPage() {
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3">
+            <a href="https://www.communitypropertyrescue.com" className="flex items-center space-x-3">
               <Image
                 src="/cpr.png"
                 alt="Community Property Rescue Logo"
@@ -22,10 +22,10 @@ export default function ApplyPage() {
                 </h1>
                 <p className="text-sm text-gray-600">Restoring hope & dignity</p>
               </div>
-            </Link>
-            <Link href="/" className="text-cyan-600 hover:text-cyan-700 font-medium">
+            </a>
+            <a href="https://www.communitypropertyrescue.com" className="text-cyan-600 hover:text-cyan-700 font-medium">
               ← Back to Home
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
