@@ -185,12 +185,12 @@ export default function ApplicationForm() {
           Thank you for submitting your application. A member of our team will review your
           information and contact you within 1-2 business days.
         </p>
-        <button
-          onClick={() => setSubmitSuccess(false)}
-          className="btn-primary"
+        <a
+          href="https://www.communitypropertyrescue.com"
+          className="btn-primary inline-block"
         >
-          Submit Another Application
-        </button>
+          Back to Website
+        </a>
       </div>
     );
   }
