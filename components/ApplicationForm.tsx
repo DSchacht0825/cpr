@@ -1,6 +1,27 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useRef } from "react";
+
+interface DocumentUpload {
+  id: string;
+  file: File;
+  preview: string;
+  document_type: string;
+  name: string;
+}
+
+const DOCUMENT_TYPES = [
+  { value: "government_id", label: "Government ID" },
+  { value: "proof_of_income", label: "Proof of Income" },
+  { value: "mortgage_statement", label: "Mortgage Statement" },
+  { value: "notice_of_default", label: "Notice of Default" },
+  { value: "notice_of_trustee_sale", label: "Notice of Trustee Sale" },
+  { value: "property_tax_bill", label: "Property Tax Bill" },
+  { value: "utility_bill", label: "Utility Bill" },
+  { value: "bank_statement", label: "Bank Statement" },
+  { value: "grant_deed", label: "Grant Deed / Title" },
+  { value: "other", label: "Other Document" },
+];
 
 interface FormData {
   // Personal Information
@@ -87,6 +108,8 @@ export default function ApplicationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [documents, setDocuments] = useState<DocumentUpload[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -111,6 +134,54 @@ export default function ApplicationForm() {
     }));
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newDoc: DocumentUpload = {
+          id: Math.random().toString(36).substring(7),
+          file,
+          preview: reader.result as string,
+          document_type: "other",
+          name: file.name,
+        };
+        setDocuments((prev) => [...prev, newDoc]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const updateDocumentType = (id: string, docType: string) => {
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, document_type: docType } : d))
+    );
+  };
+
+  const removeDocument = (id: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const uploadDocument = async (doc: DocumentUpload, applicationId: string) => {
+    const formData = new FormData();
+    formData.append("file", doc.file);
+    formData.append("applicationId", applicationId);
+    formData.append("document_type", doc.document_type);
+
+    const response = await fetch("/api/applications/documents", {
+      method: "POST",
+      body: formData,
+    });
+
+    return response.ok;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -131,7 +202,14 @@ export default function ApplicationForm() {
         throw new Error(result.error || 'Failed to submit application');
       }
 
+      // Upload documents if any
+      const applicationId = result.data?.id;
+      if (documents.length > 0 && applicationId) {
+        await Promise.all(documents.map((doc) => uploadDocument(doc, applicationId)));
+      }
+
       setSubmitSuccess(true);
+      setDocuments([]);
       // Reset form
       setFormData({
         fullName: "",
@@ -758,6 +836,79 @@ export default function ApplicationForm() {
             of our team will discuss options with you during your consultation.
           </p>
         </div>
+      </section>
+
+      {/* Supporting Documents */}
+      <section className="card">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Supporting Documents</h2>
+        <p className="text-gray-600 mb-6">
+          Do you have any supporting documents that would be helpful? (Notice of Default, Notice of
+          Trustee Sale, mortgage statements, ID, etc.) This is optional but can help us better
+          understand your situation.
+        </p>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*,.pdf"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-gray-600 font-medium">Click to upload documents</p>
+          <p className="text-gray-400 text-sm mt-1">Supports images (JPG, PNG) and PDF files</p>
+        </button>
+
+        {documents.length > 0 && (
+          <div className="mt-6 space-y-4">
+            <h3 className="font-medium text-gray-900">Uploaded Documents ({documents.length})</h3>
+            {documents.map((doc) => (
+              <div key={doc.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex-shrink-0">
+                  {doc.file.type.startsWith("image/") ? (
+                    <img src={doc.preview} alt="Preview" className="w-16 h-16 object-cover rounded-lg" />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate mb-2">{doc.name}</p>
+                  <select
+                    value={doc.document_type}
+                    onChange={(e) => updateDocumentType(doc.id, e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    {DOCUMENT_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDocument(doc.id)}
+                  className="text-red-500 hover:text-red-700 p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Submit Button */}

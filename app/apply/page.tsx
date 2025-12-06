@@ -45,25 +45,6 @@ export default function ApplyPage() {
         </div>
 
         <ApplicationForm />
-
-        <div className="mt-12 text-center">
-          <div className="card max-w-2xl mx-auto">
-            <h3 className="text-xl font-semibold mb-4">Need to Upload Documents?</h3>
-            <p className="text-gray-600 mb-4">
-              If you have a Notice of Default, Notice of Trustee Sale, or current mortgage
-              statement, you can email them to:
-            </p>
-            <a
-              href="mailto:CommunityPropertyRescue@gmail.com"
-              className="text-cyan-600 hover:text-cyan-700 font-medium"
-            >
-              CommunityPropertyRescue@gmail.com
-            </a>
-            <p className="text-sm text-gray-500 mt-2">
-              Please include your name and property address in the subject line
-            </p>
-          </div>
-        </div>
       </main>
 
       <footer className="bg-gray-900 text-white mt-20">
