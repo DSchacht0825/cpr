@@ -75,6 +75,16 @@ interface Visit {
   worker?: Worker;
 }
 
+interface Document {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  document_type: string;
+  created_at: string;
+}
+
 interface PropertyData {
   applicant: Applicant;
   visits: Visit[];
@@ -90,6 +100,8 @@ export default function PropertyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showFullApplication, setShowFullApplication] = useState(true);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -119,8 +131,24 @@ export default function PropertyDetailPage() {
     }
     if (params.id) {
       fetchPropertyData(params.id as string);
+      fetchDocuments(params.id as string);
     }
   }, [params.id, router]);
+
+  const fetchDocuments = async (id: string) => {
+    setLoadingDocs(true);
+    try {
+      const response = await fetch(`/api/applications/documents?applicationId=${id}`);
+      const result = await response.json();
+      if (response.ok && result.data) {
+        setDocuments(result.data);
+      }
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
 
   const fetchPropertyData = async (id: string) => {
     try {
@@ -165,6 +193,25 @@ export default function PropertyDetailPage() {
     "follow-up": "Follow Up",
     "property-inspection": "Property Inspection",
     "document-collection": "Document Collection",
+  };
+
+  const documentTypeLabels: Record<string, string> = {
+    government_id: "Government ID",
+    proof_of_income: "Proof of Income",
+    mortgage_statement: "Mortgage Statement",
+    notice_of_default: "Notice of Default",
+    notice_of_trustee_sale: "Notice of Trustee Sale",
+    property_tax_bill: "Property Tax Bill",
+    utility_bill: "Utility Bill",
+    bank_statement: "Bank Statement",
+    grant_deed: "Grant Deed / Title",
+    other: "Other Document",
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const downloadApplication = () => {
@@ -775,6 +822,79 @@ export default function PropertyDetailPage() {
                         {visit.follow_up_notes && ` - ${visit.follow_up_notes}`}
                       </p>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Supporting Documents */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            Supporting Documents
+            {documents.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                ({documents.length} document{documents.length > 1 ? "s" : ""})
+              </span>
+            )}
+          </h3>
+
+          {loadingDocs ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600 mx-auto"></div>
+              <p className="mt-2 text-gray-500 text-sm">Loading documents...</p>
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <p>No documents uploaded yet</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-cyan-300 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      {doc.mime_type?.startsWith("image/") ? (
+                        <img
+                          src={doc.file_url}
+                          alt={doc.file_name}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {documentTypeLabels[doc.document_type] || doc.document_type}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{doc.file_name}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatFileSize(doc.file_size)} • {formatDate(doc.created_at)}
+                      </p>
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 text-cyan-600 hover:text-cyan-700 text-sm font-medium"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}

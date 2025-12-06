@@ -185,24 +185,15 @@ export default function WorkerDashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="mb-6">
           <Link
             href="/worker/visit/new"
-            className="bg-cyan-600 text-white rounded-xl p-4 text-center font-semibold hover:bg-cyan-700 transition-colors"
+            className="block bg-cyan-600 text-white rounded-xl p-4 text-center font-semibold hover:bg-cyan-700 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            New Visit
-          </Link>
-          <Link
-            href="/worker/intake"
-            className="bg-green-600 text-white rounded-xl p-4 text-center font-semibold hover:bg-green-700 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Field Intake
+            New Field Visit
           </Link>
         </div>
 

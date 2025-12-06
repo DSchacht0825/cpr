@@ -1029,14 +1029,31 @@ function NewFieldVisitContent() {
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-cyan-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Saving Visit..." : "Save Field Visit"}
-          </button>
+          {/* Submit Buttons */}
+          <div className="space-y-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-cyan-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Saving Visit..." : "Save Field Visit"}
+            </button>
+
+            {/* Application Button - Only show for engagements */}
+            {formData.visit_outcome === "engagement" && (
+              <Link
+                href={`/worker/application${selectedApplicant ? `?applicant=${selectedApplicant.id}&name=${encodeURIComponent(selectedApplicant.full_name)}&address=${encodeURIComponent(selectedApplicant.property_address)}&phone=${encodeURIComponent(selectedApplicant.phone_number || '')}&email=${encodeURIComponent(selectedApplicant.email || '')}` : `?address=${encodeURIComponent(formData.location_address)}&name=${encodeURIComponent(formData.contact_name)}&phone=${encodeURIComponent(formData.contact_phone)}&email=${encodeURIComponent(formData.contact_email)}`}`}
+                className="block w-full bg-green-600 text-white py-4 px-6 rounded-xl font-semibold text-lg text-center hover:bg-green-700 focus:ring-4 focus:ring-green-200 transition-all"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Start Application with Client
+                </div>
+              </Link>
+            )}
+          </div>
         </form>
       </main>
     </div>
