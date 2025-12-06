@@ -33,6 +33,8 @@ interface Application {
   assigned_to?: string;
   close_outcome?: string;
   closed_at?: string;
+  source?: string;
+  submitted_by_worker?: string;
 }
 
 const CLOSE_OUTCOMES = [
@@ -260,6 +262,12 @@ export default function DashboardPage() {
     if (!workerId) return null;
     const worker = workers.find((w) => w.id === workerId);
     return worker?.full_name || "Unknown";
+  };
+
+  const getSubmittedByName = (workerId?: string) => {
+    if (!workerId) return null;
+    const worker = workers.find((w) => w.id === workerId);
+    return worker?.full_name || "Field Worker";
   };
 
   const calculateStats = (data: Application[]) => {
@@ -589,6 +597,9 @@ export default function DashboardPage() {
                     Submitted
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Submitted By
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Assigned To
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[320px]">
@@ -599,7 +610,7 @@ export default function DashboardPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredApplications.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                       No applications found
                     </td>
                   </tr>
@@ -649,6 +660,18 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(app.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {app.source === "field_intake" ? (
+                          <span className="inline-flex items-center gap-1 text-green-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                            </svg>
+                            {getSubmittedByName(app.submitted_by_worker) || "Field Worker"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">Online</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <select
