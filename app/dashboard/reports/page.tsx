@@ -119,6 +119,7 @@ export default function ReportsPage() {
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [adminNoteInput, setAdminNoteInput] = useState("");
   const [savingAdminNote, setSavingAdminNote] = useState(false);
+  const [followUpDateInput, setFollowUpDateInput] = useState("");
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -356,6 +357,7 @@ export default function ReportsPage() {
   const handleViewVisit = (visit: FieldVisit) => {
     setSelectedVisit(visit);
     setAdminNoteInput(visit.admin_notes || "");
+    setFollowUpDateInput(visit.follow_up_date ? visit.follow_up_date.substring(0, 10) : "");
     fetchVisitPhotos(visit.id);
   };
 
@@ -363,31 +365,42 @@ export default function ReportsPage() {
     setSelectedVisit(null);
     setVisitPhotos([]);
     setAdminNoteInput("");
+    setFollowUpDateInput("");
   };
 
   const saveAdminNote = async () => {
     if (!selectedVisit) return;
     setSavingAdminNote(true);
     try {
+      const updateData: Record<string, string | boolean> = {
+        admin_notes: adminNoteInput,
+      };
+      // Include follow-up date if changed
+      if (followUpDateInput) {
+        updateData.follow_up_date = followUpDateInput;
+        updateData.requires_follow_up = true;
+      }
+
       const response = await fetch(`/api/worker/visits/${selectedVisit.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admin_notes: adminNoteInput }),
+        body: JSON.stringify(updateData),
       });
       if (response.ok) {
         // Update local state
         setFieldVisits((prev) =>
           prev.map((v) =>
-            v.id === selectedVisit.id ? { ...v, admin_notes: adminNoteInput } : v
+            v.id === selectedVisit.id ? { ...v, admin_notes: adminNoteInput, follow_up_date: followUpDateInput || v.follow_up_date } : v
           )
         );
-        setSelectedVisit({ ...selectedVisit, admin_notes: adminNoteInput });
+        setSelectedVisit({ ...selectedVisit, admin_notes: adminNoteInput, follow_up_date: followUpDateInput || selectedVisit.follow_up_date });
+        alert("Saved successfully!");
       } else {
-        alert("Failed to save admin note");
+        alert("Failed to save");
       }
     } catch (err) {
-      console.error("Error saving admin note:", err);
-      alert("Failed to save admin note");
+      console.error("Error saving:", err);
+      alert("Failed to save");
     } finally {
       setSavingAdminNote(false);
     }
@@ -998,26 +1011,42 @@ export default function ReportsPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
-                          Admin Notes
+                          Admin Controls
                         </h5>
-                        {selectedVisit.admin_notes && (
-                          <div className="mb-3 p-3 bg-white rounded border border-red-200">
-                            <p className="text-red-700 whitespace-pre-wrap">{selectedVisit.admin_notes}</p>
-                          </div>
-                        )}
-                        <textarea
-                          value={adminNoteInput}
-                          onChange={(e) => setAdminNoteInput(e.target.value)}
-                          placeholder="Add notes for the worker (displayed in red)..."
-                          rows={3}
-                          className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 placeholder-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        />
+
+                        {/* Change Follow-up Date */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-red-700 mb-1">Follow-up Date</label>
+                          <input
+                            type="date"
+                            value={followUpDateInput}
+                            onChange={(e) => setFollowUpDateInput(e.target.value)}
+                            className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          />
+                        </div>
+
+                        {/* Admin Notes */}
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-red-700 mb-1">Notes for Worker</label>
+                          {selectedVisit.admin_notes && (
+                            <div className="mb-2 p-3 bg-white rounded border border-red-200">
+                              <p className="text-red-700 whitespace-pre-wrap text-sm">{selectedVisit.admin_notes}</p>
+                            </div>
+                          )}
+                          <textarea
+                            value={adminNoteInput}
+                            onChange={(e) => setAdminNoteInput(e.target.value)}
+                            placeholder="Add notes for the worker (displayed in red)..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 placeholder-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          />
+                        </div>
                         <button
                           onClick={saveAdminNote}
                           disabled={savingAdminNote}
-                          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {savingAdminNote ? "Saving..." : "Save Admin Note"}
+                          {savingAdminNote ? "Saving..." : "Save Changes"}
                         </button>
                       </div>
 
@@ -1926,26 +1955,42 @@ export default function ReportsPage() {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
-                                Admin Notes
+                                Admin Controls
                               </h5>
-                              {selectedVisit.admin_notes && (
-                                <div className="mb-3 p-3 bg-white rounded border border-red-200">
-                                  <p className="text-red-700 whitespace-pre-wrap">{selectedVisit.admin_notes}</p>
-                                </div>
-                              )}
-                              <textarea
-                                value={adminNoteInput}
-                                onChange={(e) => setAdminNoteInput(e.target.value)}
-                                placeholder="Add notes for the worker (displayed in red)..."
-                                rows={3}
-                                className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 placeholder-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                              />
+
+                              {/* Change Follow-up Date */}
+                              <div className="mb-4">
+                                <label className="block text-sm font-medium text-red-700 mb-1">Follow-up Date</label>
+                                <input
+                                  type="date"
+                                  value={followUpDateInput}
+                                  onChange={(e) => setFollowUpDateInput(e.target.value)}
+                                  className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                />
+                              </div>
+
+                              {/* Admin Notes */}
+                              <div className="mb-3">
+                                <label className="block text-sm font-medium text-red-700 mb-1">Notes for Worker</label>
+                                {selectedVisit.admin_notes && (
+                                  <div className="mb-2 p-3 bg-white rounded border border-red-200">
+                                    <p className="text-red-700 whitespace-pre-wrap text-sm">{selectedVisit.admin_notes}</p>
+                                  </div>
+                                )}
+                                <textarea
+                                  value={adminNoteInput}
+                                  onChange={(e) => setAdminNoteInput(e.target.value)}
+                                  placeholder="Add notes for the worker (displayed in red)..."
+                                  rows={3}
+                                  className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 placeholder-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                />
+                              </div>
                               <button
                                 onClick={saveAdminNote}
                                 disabled={savingAdminNote}
-                                className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {savingAdminNote ? "Saving..." : "Save Admin Note"}
+                                {savingAdminNote ? "Saving..." : "Save Changes"}
                               </button>
                             </div>
 
