@@ -21,6 +21,7 @@ export async function PATCH(
       'follow_up_date',
       'follow_up_notes',
       'interest_level',
+      'admin_notes',
     ];
 
     const updateData: Record<string, unknown> = {};
