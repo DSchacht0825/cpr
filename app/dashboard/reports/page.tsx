@@ -1920,6 +1920,35 @@ export default function ReportsPage() {
                               </div>
                             </div>
 
+                            {/* Admin Notes Section - Red styled */}
+                            <div className="bg-red-50 rounded-lg p-4 shadow-sm border-2 border-red-200">
+                              <h5 className="font-semibold text-red-700 mb-3 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                Admin Notes
+                              </h5>
+                              {selectedVisit.admin_notes && (
+                                <div className="mb-3 p-3 bg-white rounded border border-red-200">
+                                  <p className="text-red-700 whitespace-pre-wrap">{selectedVisit.admin_notes}</p>
+                                </div>
+                              )}
+                              <textarea
+                                value={adminNoteInput}
+                                onChange={(e) => setAdminNoteInput(e.target.value)}
+                                placeholder="Add notes for the worker (displayed in red)..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-red-300 rounded-lg text-red-700 placeholder-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                              />
+                              <button
+                                onClick={saveAdminNote}
+                                disabled={savingAdminNote}
+                                className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {savingAdminNote ? "Saving..." : "Save Admin Note"}
+                              </button>
+                            </div>
+
                             {/* Link to Property if exists */}
                             {selectedVisit.applicant_id && (
                               <Link
