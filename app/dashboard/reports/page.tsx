@@ -128,6 +128,8 @@ export default function ReportsPage() {
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
     "david@communitypropertyrescue.com",
+    "taylor@communitypropertyrescue.com",
+    "andrew@communitypropertyrescue.com",
   ];
 
   useEffect(() => {

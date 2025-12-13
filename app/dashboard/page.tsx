@@ -103,6 +103,8 @@ export default function DashboardPage() {
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
     "david@communitypropertyrescue.com",
+    "taylor@communitypropertyrescue.com",
+    "andrew@communitypropertyrescue.com",
   ];
 
   // Email with delete access for testing
