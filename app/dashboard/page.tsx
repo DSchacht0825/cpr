@@ -293,13 +293,13 @@ export default function DashboardPage() {
   const filterApplications = () => {
     let filtered = [...applications];
 
-    // Always exclude closed applications from main dashboard
-    // (they have their own page)
-    filtered = filtered.filter((app) => app.status !== "closed");
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((app) => app.status === statusFilter);
+    // Filter by status - "all" shows everything except closed, "closed" shows only closed
+    if (statusFilter === "closed") {
+      filtered = filtered.filter((app) => app.status === "closed");
+    } else if (statusFilter !== "all") {
+      filtered = filtered.filter((app) => app.status === statusFilter && app.status !== "closed");
     }
+    // "all" now shows all applications including closed
 
     if (zipFilter.length > 0) {
       filtered = filtered.filter((app) => zipFilter.includes(app.property_zip));
@@ -482,10 +482,11 @@ export default function DashboardPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="input-field"
               >
-                <option value="all">All Active</option>
+                <option value="all">All Applications</option>
                 <option value="pending">Pending</option>
                 <option value="contacted">Contacted</option>
                 <option value="in-progress">In Progress</option>
+                <option value="closed">Closed</option>
               </select>
             </div>
 
