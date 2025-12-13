@@ -389,7 +389,7 @@ export default function DashboardPage() {
     return auction <= sevenDaysFromNow;
   };
 
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -750,7 +750,7 @@ export default function DashboardPage() {
                           {closingId === app.id && (
                             <span className="text-gray-400 text-xs whitespace-nowrap">Closing...</span>
                           )}
-                          {userEmail === DELETE_ACCESS_EMAIL && (
+                          {userEmail.toLowerCase() === DELETE_ACCESS_EMAIL.toLowerCase() && (
                             <button
                               onClick={() => handleDeleteApplication(app.id)}
                               disabled={deletingAppId === app.id}
