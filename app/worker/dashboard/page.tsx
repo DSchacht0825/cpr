@@ -172,6 +172,23 @@ export default function WorkerDashboardPage() {
                 <h1 className="text-lg font-bold text-gray-900">Field Worker</h1>
                 <p className="text-sm text-gray-600">{session?.profile.full_name}</p>
               </div>
+              {/* Admin buttons for Larry */}
+              {session?.user.email?.toLowerCase() === "larrymonteforte@communitypropertyrescue.com" && (
+                <div className="flex gap-1 ml-2">
+                  <Link
+                    href="/dashboard"
+                    className="px-2 py-1 bg-purple-600 text-white text-xs rounded font-medium hover:bg-purple-700"
+                  >
+                    Admin
+                  </Link>
+                  <Link
+                    href="/dashboard/reports"
+                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded font-medium hover:bg-orange-700"
+                  >
+                    Reports
+                  </Link>
+                </div>
+              )}
             </div>
             <button
               onClick={handleLogout}
