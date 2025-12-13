@@ -336,6 +336,12 @@ export default function WorkerDashboardPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 ml-2">
+                      <Link
+                        href={`/worker/visit/${visit.id}/edit`}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        Edit
+                      </Link>
                       {visit.requires_follow_up && (
                         <Link
                           href={`/worker/visit/new?followup=${visit.id}&address=${encodeURIComponent(visit.location_address)}${visit.applicant_id ? `&applicant=${visit.applicant_id}` : ''}`}

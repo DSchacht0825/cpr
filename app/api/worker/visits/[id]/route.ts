@@ -17,11 +17,15 @@ export async function PATCH(
       'property_condition_notes',
       'occupant_situation',
       'immediate_needs',
+      'general_notes',
       'requires_follow_up',
       'follow_up_date',
       'follow_up_notes',
       'interest_level',
+      'visit_outcome',
       'admin_notes',
+      'edit_latitude',
+      'edit_longitude',
     ];
 
     const updateData: Record<string, unknown> = {};
@@ -87,6 +91,43 @@ export async function GET(
     return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
     console.error('Error fetching visit:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Delete associated photos first
+    await supabaseAdmin
+      .from('field_visit_photos')
+      .delete()
+      .eq('field_visit_id', id);
+
+    // Delete the visit
+    const { error } = await supabaseAdmin
+      .from('field_visits')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error deleting visit:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete visit', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting visit:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
