@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('applicants')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .limit(1000);
 
@@ -113,7 +113,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
+
+    console.log('Applications fetch - count:', count, 'data length:', data?.length);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -123,7 +125,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json({ data, count }, { status: 200 });
   } catch (error) {
     console.error('Error fetching applications:', error);
     return NextResponse.json(
