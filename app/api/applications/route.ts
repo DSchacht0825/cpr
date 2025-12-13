@@ -106,7 +106,8 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('applicants')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000);
 
     if (status) {
       query = query.eq('status', status);
