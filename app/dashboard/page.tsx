@@ -93,6 +93,8 @@ export default function DashboardPage() {
   const [visitLocations, setVisitLocations] = useState<VisitLocation[]>([]);
   const [showMap, setShowMap] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -102,6 +104,9 @@ export default function DashboardPage() {
     "schacht.dan@gmail.com",
     "david@communitypropertyrescue.com",
   ];
+
+  // Email with delete access for testing
+  const DELETE_ACCESS_EMAIL = "larry@communitypropertyrescue.com";
 
   // Check admin access on mount
   useEffect(() => {
@@ -114,9 +119,10 @@ export default function DashboardPage() {
 
       try {
         const session = JSON.parse(storedSession);
-        const userEmail = session.user?.email?.toLowerCase();
+        const email = session.user?.email?.toLowerCase();
+        setUserEmail(email || "");
         // Check if user email is in admin list
-        if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+        if (email && ADMIN_EMAILS.includes(email)) {
           session.profile.role = "admin";
           localStorage.setItem("worker_session", JSON.stringify(session));
           setAuthChecked(true);
@@ -255,6 +261,30 @@ export default function DashboardPage() {
       console.error("Failed to close application:", err);
     } finally {
       setClosingId(null);
+    }
+  };
+
+  const handleDeleteApplication = async (applicationId: string) => {
+    if (!confirm("Are you sure you want to DELETE this application? This cannot be undone.")) {
+      return;
+    }
+
+    setDeletingAppId(applicationId);
+    try {
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setApplications((prev) => prev.filter((app) => app.id !== applicationId));
+      } else {
+        alert("Failed to delete application");
+      }
+    } catch (err) {
+      console.error("Failed to delete application:", err);
+      alert("Failed to delete application");
+    } finally {
+      setDeletingAppId(null);
     }
   };
 
@@ -717,6 +747,15 @@ export default function DashboardPage() {
                           </select>
                           {closingId === app.id && (
                             <span className="text-gray-400 text-xs whitespace-nowrap">Closing...</span>
+                          )}
+                          {userEmail === DELETE_ACCESS_EMAIL && (
+                            <button
+                              onClick={() => handleDeleteApplication(app.id)}
+                              disabled={deletingAppId === app.id}
+                              className="px-2 py-1 bg-red-600 text-white text-xs rounded font-medium hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {deletingAppId === app.id ? "..." : "Delete"}
+                            </button>
                           )}
                         </div>
                       </td>

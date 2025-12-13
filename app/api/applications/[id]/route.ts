@@ -78,3 +78,34 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Delete the application
+    const { error } = await supabaseAdmin
+      .from('applicants')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase error deleting application:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete application', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting application:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
