@@ -133,24 +133,37 @@ export default function ReportsPage() {
   useEffect(() => {
     // Check admin access
     const storedSession = localStorage.getItem("worker_session");
-    if (storedSession) {
-      try {
-        const session = JSON.parse(storedSession);
-        const userEmail = session.user?.email?.toLowerCase();
+    if (!storedSession) {
+      router.push("/worker");
+      return;
+    }
 
-        // Check if user email is in admin list or has admin role
-        const isAdmin = (userEmail && ADMIN_EMAILS.includes(userEmail)) || session.profile?.role === "admin";
+    try {
+      const session = JSON.parse(storedSession);
+      const userEmail = session.user?.email?.toLowerCase();
 
-        if (!isAdmin) {
-          router.push("/worker/dashboard");
-          return;
-        }
-      } catch {
-        router.push("/worker");
+      // Check if user email is in admin list
+      if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+        // Update session to ensure role is admin
+        session.profile = session.profile || {};
+        session.profile.role = "admin";
+        localStorage.setItem("worker_session", JSON.stringify(session));
+        fetchData();
         return;
       }
+
+      // Check if has admin role in session
+      if (session.profile?.role === "admin") {
+        fetchData();
+        return;
+      }
+
+      // Not admin, redirect
+      router.push("/worker/dashboard");
+    } catch {
+      router.push("/worker");
+      return;
     }
-    fetchData();
   }, [router]);
 
   useEffect(() => {
@@ -423,25 +436,38 @@ export default function ReportsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              {/* Mobile back button */}
+              <Link
+                href="/dashboard"
+                className="sm:hidden p-2 -ml-2 text-gray-500 hover:text-cyan-600 hover:bg-gray-100 rounded-full"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
               <Image
                 src="/cpr.png"
                 alt="Community Property Rescue Logo"
                 width={50}
                 height={50}
-                className="rounded-full"
+                className="rounded-full hidden sm:block"
               />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                   Reports & Analytics
                 </h1>
-                <p className="text-sm text-gray-600">Community Property Rescue</p>
+                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Community Property Rescue</p>
               </div>
             </div>
+            {/* Desktop back button */}
             <Link
               href="/dashboard"
-              className="text-cyan-600 hover:text-cyan-700 font-medium"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 transition-colors"
             >
-              &larr; Back to Dashboard
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Dashboard
             </Link>
           </div>
         </div>
