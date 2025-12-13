@@ -97,7 +97,7 @@ export default function DashboardPage() {
   // Admin emails that always have access
   const ADMIN_EMAILS = [
     "dschacht@sdrescue.org",
-    "larrymonteforte@communitypropertyrescue.com",
+    "larry@communitypropertyrescue.com",
     "larryjr@communitypropertyrescue.com",
     "schacht.dan@gmail.com",
     "david@communitypropertyrescue.com",
