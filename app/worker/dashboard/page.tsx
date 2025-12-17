@@ -172,8 +172,8 @@ export default function WorkerDashboardPage() {
                 <h1 className="text-lg font-bold text-gray-900">Field Worker</h1>
                 <p className="text-sm text-gray-600">{session?.profile.full_name}</p>
               </div>
-              {/* Admin buttons for Larry */}
-              {session?.user.email?.toLowerCase() === "larry@communitypropertyrescue.com" && (
+              {/* Admin buttons for admins */}
+              {(session?.profile?.role === "admin" || ["larry@communitypropertyrescue.com", "taylor@communitypropertyrescue.com", "dschacht@sdrescue.org", "schacht.dan@gmail.com", "david@communitypropertyrescue.com", "andrew@communitypropertyrescue.com", "larryjr@communitypropertyrescue.com"].includes(session?.user.email?.toLowerCase() || "")) && (
                 <div className="flex gap-1 ml-2">
                   <Link
                     href="/dashboard"
