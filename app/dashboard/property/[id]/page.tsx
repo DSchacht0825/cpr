@@ -93,6 +93,12 @@ interface PropertyData {
   engagementCount: number;
 }
 
+interface PendingUpload {
+  file: File;
+  documentType: string;
+  preview?: string;
+}
+
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -102,6 +108,12 @@ export default function PropertyDetailPage() {
   const [showFullApplication, setShowFullApplication] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Document upload state
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -212,6 +224,113 @@ export default function PropertyDetailPage() {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newUploads: PendingUpload[] = [];
+    Array.from(files).forEach((file) => {
+      const upload: PendingUpload = {
+        file,
+        documentType: "other",
+      };
+      // Create preview for images
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPendingUploads((prev) =>
+            prev.map((u) =>
+              u.file === file ? { ...u, preview: e.target?.result as string } : u
+            )
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+      newUploads.push(upload);
+    });
+
+    setPendingUploads((prev) => [...prev, ...newUploads]);
+    e.target.value = ""; // Reset input
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (!files) return;
+
+    const newUploads: PendingUpload[] = [];
+    Array.from(files).forEach((file) => {
+      // Only accept images and PDFs
+      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+        return;
+      }
+      const upload: PendingUpload = {
+        file,
+        documentType: "other",
+      };
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPendingUploads((prev) =>
+            prev.map((u) =>
+              u.file === file ? { ...u, preview: e.target?.result as string } : u
+            )
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+      newUploads.push(upload);
+    });
+
+    setPendingUploads((prev) => [...prev, ...newUploads]);
+  };
+
+  const updateDocumentType = (index: number, type: string) => {
+    setPendingUploads((prev) =>
+      prev.map((u, i) => (i === index ? { ...u, documentType: type } : u))
+    );
+  };
+
+  const removePendingUpload = (index: number) => {
+    setPendingUploads((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUploadDocuments = async () => {
+    if (pendingUploads.length === 0 || !params.id) return;
+
+    setUploadingDoc(true);
+    setUploadError("");
+
+    try {
+      for (const upload of pendingUploads) {
+        const formData = new FormData();
+        formData.append("file", upload.file);
+        formData.append("applicationId", params.id as string);
+        formData.append("document_type", upload.documentType);
+
+        const response = await fetch("/api/applications/documents", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.error || "Failed to upload document");
+        }
+      }
+
+      // Refresh documents list
+      await fetchDocuments(params.id as string);
+      setPendingUploads([]);
+      setShowUploadForm(false);
+    } catch (err) {
+      console.error("Error uploading documents:", err);
+      setUploadError(err instanceof Error ? err.message : "Failed to upload documents");
+    } finally {
+      setUploadingDoc(false);
+    }
   };
 
   const downloadApplication = () => {
@@ -831,14 +950,152 @@ export default function PropertyDetailPage() {
 
         {/* Supporting Documents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Supporting Documents
-            {documents.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                ({documents.length} document{documents.length > 1 ? "s" : ""})
-              </span>
-            )}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-900">
+              Supporting Documents
+              {documents.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({documents.length} document{documents.length > 1 ? "s" : ""})
+                </span>
+              )}
+            </h3>
+            <button
+              onClick={() => setShowUploadForm(!showUploadForm)}
+              className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Document
+            </button>
+          </div>
+
+          {/* Upload Form */}
+          {showUploadForm && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Upload Supporting Documents</h4>
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-cyan-400 transition-colors cursor-pointer"
+                onClick={() => document.getElementById("file-upload")?.click()}
+              >
+                <input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm text-gray-600">
+                  Drag and drop files here, or <span className="text-cyan-600 font-medium">browse</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Accepts images (JPG, PNG) and PDF files</p>
+              </div>
+
+              {/* Pending Uploads List */}
+              {pendingUploads.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {pendingUploads.map((upload, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                      {/* Preview */}
+                      <div className="flex-shrink-0">
+                        {upload.preview ? (
+                          <img src={upload.preview} alt="" className="w-12 h-12 object-cover rounded" />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{upload.file.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(upload.file.size)}</p>
+                      </div>
+
+                      {/* Document Type Selector */}
+                      <select
+                        value={upload.documentType}
+                        onChange={(e) => updateDocumentType(index, e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      >
+                        <option value="government_id">Government ID</option>
+                        <option value="proof_of_income">Proof of Income</option>
+                        <option value="mortgage_statement">Mortgage Statement</option>
+                        <option value="notice_of_default">Notice of Default</option>
+                        <option value="notice_of_trustee_sale">Notice of Trustee Sale</option>
+                        <option value="property_tax_bill">Property Tax Bill</option>
+                        <option value="utility_bill">Utility Bill</option>
+                        <option value="bank_statement">Bank Statement</option>
+                        <option value="grant_deed">Grant Deed / Title</option>
+                        <option value="other">Other Document</option>
+                      </select>
+
+                      {/* Remove Button */}
+                      <button
+                        onClick={() => removePendingUpload(index)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Error Message */}
+              {uploadError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {uploadError}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="mt-4 flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowUploadForm(false);
+                    setPendingUploads([]);
+                    setUploadError("");
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUploadDocuments}
+                  disabled={pendingUploads.length === 0 || uploadingDoc}
+                  className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {uploadingDoc ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Upload {pendingUploads.length > 0 ? `(${pendingUploads.length})` : ""}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {loadingDocs ? (
             <div className="text-center py-8">
