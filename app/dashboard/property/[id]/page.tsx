@@ -115,6 +115,11 @@ export default function PropertyDetailPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
+  // Auction date edit state
+  const [editingAuctionDate, setEditingAuctionDate] = useState(false);
+  const [auctionDateValue, setAuctionDateValue] = useState("");
+  const [savingAuctionDate, setSavingAuctionDate] = useState(false);
+
   // Admin emails that always have access
   const ADMIN_EMAILS = [
     "dschacht@sdrescue.org",
@@ -224,6 +229,55 @@ export default function PropertyDetailPage() {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const handleEditAuctionDate = () => {
+    setAuctionDateValue(data?.applicant.auction_date || "");
+    setEditingAuctionDate(true);
+  };
+
+  const handleSaveAuctionDate = async () => {
+    if (!params.id) return;
+
+    setSavingAuctionDate(true);
+    try {
+      const updateData = auctionDateValue
+        ? { auction_date: auctionDateValue, has_auction_date: true }
+        : { auction_date: null, has_auction_date: false };
+
+      const response = await fetch(`/api/applications/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update auction date");
+      }
+
+      // Update local state
+      if (data) {
+        setData({
+          ...data,
+          applicant: {
+            ...data.applicant,
+            auction_date: auctionDateValue || undefined,
+            has_auction_date: !!auctionDateValue,
+          },
+        });
+      }
+      setEditingAuctionDate(false);
+    } catch (err) {
+      console.error("Error updating auction date:", err);
+      alert("Failed to update auction date. Please try again.");
+    } finally {
+      setSavingAuctionDate(false);
+    }
+  };
+
+  const handleCancelAuctionEdit = () => {
+    setEditingAuctionDate(false);
+    setAuctionDateValue("");
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -808,9 +862,52 @@ export default function PropertyDetailPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500">Auction Date</p>
-                  <p className={`font-medium ${applicant.auction_date ? 'text-red-600' : 'text-gray-900'}`}>
-                    {applicant.auction_date ? formatDate(applicant.auction_date) : 'Not scheduled'}
-                  </p>
+                  {editingAuctionDate ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="date"
+                        value={auctionDateValue}
+                        onChange={(e) => setAuctionDateValue(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={handleSaveAuctionDate}
+                        disabled={savingAuctionDate}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50"
+                      >
+                        {savingAuctionDate ? "..." : "Save"}
+                      </button>
+                      <button
+                        onClick={handleCancelAuctionEdit}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      {auctionDateValue && (
+                        <button
+                          onClick={() => setAuctionDateValue("")}
+                          className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className={`font-medium ${applicant.auction_date ? 'text-red-600' : 'text-gray-900'}`}>
+                        {applicant.auction_date ? formatDate(applicant.auction_date) : 'Not scheduled'}
+                      </p>
+                      <button
+                        onClick={handleEditAuctionDate}
+                        className="p-1 text-gray-400 hover:text-cyan-600 transition-colors"
+                        title="Edit auction date"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Trustee Name</p>

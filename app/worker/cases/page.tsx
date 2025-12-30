@@ -34,6 +34,11 @@ export default function WorkerCasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Auction date editing state
+  const [editingCaseId, setEditingCaseId] = useState<string | null>(null);
+  const [auctionDateValue, setAuctionDateValue] = useState("");
+  const [savingAuctionDate, setSavingAuctionDate] = useState(false);
+
   useEffect(() => {
     const storedSession = localStorage.getItem("worker_session");
     if (!storedSession) {
@@ -80,6 +85,61 @@ export default function WorkerCasesPage() {
       return daysUntil <= 7;
     }
     return c.has_notice_of_trustee_sale;
+  };
+
+  const handleEditAuctionDate = (e: React.MouseEvent, caseItem: Case) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingCaseId(caseItem.id);
+    setAuctionDateValue(caseItem.auction_date || "");
+  };
+
+  const handleSaveAuctionDate = async (e: React.MouseEvent, caseId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setSavingAuctionDate(true);
+    try {
+      const updateData = auctionDateValue
+        ? { auction_date: auctionDateValue, has_auction_date: true }
+        : { auction_date: null, has_auction_date: false };
+
+      const response = await fetch(`/api/applications/${caseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update auction date");
+      }
+
+      // Update local state
+      setCases((prev) =>
+        prev.map((c) =>
+          c.id === caseId
+            ? {
+                ...c,
+                auction_date: auctionDateValue || undefined,
+                has_auction_date: !!auctionDateValue,
+              }
+            : c
+        )
+      );
+      setEditingCaseId(null);
+    } catch (err) {
+      console.error("Error updating auction date:", err);
+      alert("Failed to update auction date. Please try again.");
+    } finally {
+      setSavingAuctionDate(false);
+    }
+  };
+
+  const handleCancelAuctionEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingCaseId(null);
+    setAuctionDateValue("");
   };
 
   if (loading) {
@@ -145,10 +205,48 @@ export default function WorkerCasesPage() {
                       >
                         {c.phone_number}
                       </a>
-                      {c.auction_date && (
-                        <span className="text-red-600">
-                          Auction: {formatDate(c.auction_date)}
-                        </span>
+                      {editingCaseId === c.id ? (
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="date"
+                            value={auctionDateValue}
+                            onChange={(e) => setAuctionDateValue(e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            onClick={(e) => handleSaveAuctionDate(e, c.id)}
+                            disabled={savingAuctionDate}
+                            className="px-2 py-1 text-xs font-medium text-white bg-cyan-600 rounded hover:bg-cyan-700 disabled:opacity-50"
+                          >
+                            {savingAuctionDate ? "..." : "Save"}
+                          </button>
+                          <button
+                            onClick={handleCancelAuctionEdit}
+                            className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          {c.auction_date ? (
+                            <span className="text-red-600">
+                              Auction: {formatDate(c.auction_date)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">No auction date</span>
+                          )}
+                          <button
+                            onClick={(e) => handleEditAuctionDate(e, c)}
+                            className="p-1 text-gray-400 hover:text-cyan-600 transition-colors"
+                            title="Edit auction date"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
