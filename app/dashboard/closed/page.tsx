@@ -38,6 +38,7 @@ export default function ClosedApplicationsPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedApp, setSelectedApp] = useState<ClosedApplication | null>(null);
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -204,6 +205,38 @@ export default function ClosedApplicationsPage() {
     }
   };
 
+  const handleReopenApplication = async (appId: string) => {
+    if (!confirm("Are you sure you want to reopen this application? It will be moved back to the active dashboard.")) {
+      return;
+    }
+
+    setReopeningId(appId);
+    try {
+      const response = await fetch(`/api/applications/${appId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "in-progress",
+          close_outcome: null,
+          closed_at: null,
+        }),
+      });
+
+      if (response.ok) {
+        // Remove from the closed list
+        setApplications((prev) => prev.filter((app) => app.id !== appId));
+        setSelectedApp(null);
+      } else {
+        alert("Failed to reopen application. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to reopen application:", err);
+      alert("Failed to reopen application. Please try again.");
+    } finally {
+      setReopeningId(null);
+    }
+  };
+
   // Calculate outcome stats
   const outcomeCounts = applications.reduce((acc, app) => {
     const outcome = app.close_outcome || "unknown";
@@ -276,19 +309,40 @@ export default function ClosedApplicationsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <Link
-                    href={`/dashboard/property/${selectedApp.id}`}
-                    className="flex-1 bg-cyan-600 text-white text-center py-2 rounded-lg font-medium hover:bg-cyan-700"
-                  >
-                    View Full Details
-                  </Link>
+                <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => setSelectedApp(null)}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300"
+                    onClick={() => handleReopenApplication(selectedApp.id)}
+                    disabled={reopeningId === selectedApp.id}
+                    className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Close
+                    {reopeningId === selectedApp.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Reopening...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Reopen Application
+                      </>
+                    )}
                   </button>
+                  <div className="flex gap-3">
+                    <Link
+                      href={`/dashboard/property/${selectedApp.id}`}
+                      className="flex-1 bg-cyan-600 text-white text-center py-2 rounded-lg font-medium hover:bg-cyan-700"
+                    >
+                      View Full Details
+                    </Link>
+                    <button
+                      onClick={() => setSelectedApp(null)}
+                      className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -475,15 +529,27 @@ export default function ClosedApplicationsPage() {
                         {formatDate(app.closed_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedApp(app);
-                          }}
-                          className="text-cyan-600 hover:text-cyan-700 font-medium"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReopenApplication(app.id);
+                            }}
+                            disabled={reopeningId === app.id}
+                            className="text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                          >
+                            {reopeningId === app.id ? "..." : "Reopen"}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedApp(app);
+                            }}
+                            className="text-cyan-600 hover:text-cyan-700 font-medium"
+                          >
+                            View
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

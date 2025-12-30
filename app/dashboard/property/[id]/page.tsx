@@ -120,6 +120,9 @@ export default function PropertyDetailPage() {
   const [auctionDateValue, setAuctionDateValue] = useState("");
   const [savingAuctionDate, setSavingAuctionDate] = useState(false);
 
+  // Reopen state
+  const [reopening, setReopening] = useState(false);
+
   // Admin emails that always have access
   const ADMIN_EMAILS = [
     "dschacht@sdrescue.org",
@@ -278,6 +281,46 @@ export default function PropertyDetailPage() {
   const handleCancelAuctionEdit = () => {
     setEditingAuctionDate(false);
     setAuctionDateValue("");
+  };
+
+  const handleReopenApplication = async () => {
+    if (!params.id) return;
+    if (!confirm("Are you sure you want to reopen this application? It will be moved back to the active dashboard.")) {
+      return;
+    }
+
+    setReopening(true);
+    try {
+      const response = await fetch(`/api/applications/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "in-progress",
+          close_outcome: null,
+          closed_at: null,
+        }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        if (data) {
+          setData({
+            ...data,
+            applicant: {
+              ...data.applicant,
+              status: "in-progress",
+            },
+          });
+        }
+      } else {
+        alert("Failed to reopen application. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to reopen application:", err);
+      alert("Failed to reopen application. Please try again.");
+    } finally {
+      setReopening(false);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -670,6 +713,27 @@ export default function PropertyDetailPage() {
             </div>
 
             <div className="flex gap-3">
+              {applicant.status === 'closed' && (
+                <button
+                  onClick={handleReopenApplication}
+                  disabled={reopening}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {reopening ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Reopening...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Reopen
+                    </>
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => setShowFullApplication(!showFullApplication)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
