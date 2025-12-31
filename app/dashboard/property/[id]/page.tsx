@@ -123,6 +123,23 @@ export default function PropertyDetailPage() {
   // Reopen state
   const [reopening, setReopening] = useState(false);
 
+  // Edit application state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    phone_number: "",
+    email: "",
+    property_address: "",
+    property_city: "",
+    property_county: "",
+    property_zip: "",
+    auction_date: "",
+    trustee_name: "",
+    status: "",
+    comments: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
   // Admin emails that always have access
   const ADMIN_EMAILS = [
     "dschacht@sdrescue.org",
@@ -281,6 +298,65 @@ export default function PropertyDetailPage() {
   const handleCancelAuctionEdit = () => {
     setEditingAuctionDate(false);
     setAuctionDateValue("");
+  };
+
+  const openEditModal = () => {
+    if (data?.applicant) {
+      setEditForm({
+        full_name: data.applicant.full_name || "",
+        phone_number: data.applicant.phone_number || "",
+        email: data.applicant.email || "",
+        property_address: data.applicant.property_address || "",
+        property_city: data.applicant.property_city || "",
+        property_county: data.applicant.property_county || "",
+        property_zip: data.applicant.property_zip || "",
+        auction_date: data.applicant.auction_date || "",
+        trustee_name: data.applicant.trustee_name || "",
+        status: data.applicant.status || "",
+        comments: data.applicant.comments || "",
+      });
+      setShowEditModal(true);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!params.id) return;
+
+    setSavingEdit(true);
+    try {
+      const response = await fetch(`/api/applications/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editForm,
+          has_auction_date: !!editForm.auction_date,
+          auction_date: editForm.auction_date || null,
+        }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        if (data) {
+          setData({
+            ...data,
+            applicant: {
+              ...data.applicant,
+              ...editForm,
+              has_auction_date: !!editForm.auction_date,
+              auction_date: editForm.auction_date || undefined,
+            },
+          });
+        }
+        setShowEditModal(false);
+      } else {
+        alert("Failed to save changes. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error saving changes:", err);
+      alert("Failed to save changes. Please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleReopenApplication = async () => {
@@ -665,6 +741,177 @@ export default function PropertyDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Edit Application Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Edit Application</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-500 hover:text-gray-700 p-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Personal Information</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={editForm.phone_number}
+                        onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm text-gray-600 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Information */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Property Information</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm text-gray-600 mb-1">Property Address</label>
+                      <input
+                        type="text"
+                        value={editForm.property_address}
+                        onChange={(e) => setEditForm({ ...editForm, property_address: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">City</label>
+                      <input
+                        type="text"
+                        value={editForm.property_city}
+                        onChange={(e) => setEditForm({ ...editForm, property_city: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">County</label>
+                      <input
+                        type="text"
+                        value={editForm.property_county}
+                        onChange={(e) => setEditForm({ ...editForm, property_county: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">ZIP Code</label>
+                      <input
+                        type="text"
+                        value={editForm.property_zip}
+                        onChange={(e) => setEditForm({ ...editForm, property_zip: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Urgency & Status */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Urgency & Status</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Auction Date</label>
+                      <input
+                        type="date"
+                        value={editForm.auction_date}
+                        onChange={(e) => setEditForm({ ...editForm, auction_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Trustee Name</label>
+                      <input
+                        type="text"
+                        value={editForm.trustee_name}
+                        onChange={(e) => setEditForm({ ...editForm, trustee_name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Status</label>
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Comments</h4>
+                  <textarea
+                    value={editForm.comments}
+                    onChange={(e) => setEditForm({ ...editForm, comments: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Add any additional comments..."
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingEdit ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -734,6 +981,15 @@ export default function PropertyDetailPage() {
                   )}
                 </button>
               )}
+              <button
+                onClick={openEditModal}
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </button>
               <button
                 onClick={() => setShowFullApplication(!showFullApplication)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
