@@ -325,13 +325,22 @@ export default function DashboardPage() {
   const filterApplications = () => {
     let filtered = [...applications];
 
-    // Filter by status - "all" shows everything except closed, "closed" shows only closed
+    // Filter by status
     if (statusFilter === "closed") {
       filtered = filtered.filter((app) => app.status === "closed");
+    } else if (statusFilter === "urgent") {
+      // Filter for urgent auctions (within 7 days)
+      const now = new Date();
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter((app) => {
+        if (!app.auction_date) return false;
+        const auctionDate = new Date(app.auction_date);
+        return auctionDate <= sevenDaysFromNow;
+      });
     } else if (statusFilter !== "all") {
       filtered = filtered.filter((app) => app.status === statusFilter && app.status !== "closed");
     }
-    // "all" now shows all applications including closed
+    // "all" shows all applications
 
     if (zipFilter.length > 0) {
       filtered = filtered.filter((app) => zipFilter.includes(app.property_zip));
@@ -454,32 +463,50 @@ export default function DashboardPage() {
       </nav>
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+        {/* Stats Cards - Clickable to filter */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="card">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`card text-left hover:ring-2 hover:ring-gray-300 transition-all cursor-pointer ${statusFilter === "all" ? "ring-2 ring-gray-400" : ""}`}
+          >
             <p className="text-sm text-gray-600 mb-1">Total Applications</p>
             <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-          <div className="card">
+          </button>
+          <button
+            onClick={() => setStatusFilter("pending")}
+            className={`card text-left hover:ring-2 hover:ring-yellow-300 transition-all cursor-pointer ${statusFilter === "pending" ? "ring-2 ring-yellow-400" : ""}`}
+          >
             <p className="text-sm text-gray-600 mb-1">Pending</p>
             <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
-          </div>
-          <div className="card">
+          </button>
+          <button
+            onClick={() => setStatusFilter("contacted")}
+            className={`card text-left hover:ring-2 hover:ring-blue-300 transition-all cursor-pointer ${statusFilter === "contacted" ? "ring-2 ring-blue-400" : ""}`}
+          >
             <p className="text-sm text-gray-600 mb-1">Contacted</p>
             <p className="text-3xl font-bold text-blue-600">{stats.contacted}</p>
-          </div>
-          <div className="card">
+          </button>
+          <button
+            onClick={() => setStatusFilter("in-progress")}
+            className={`card text-left hover:ring-2 hover:ring-cyan-300 transition-all cursor-pointer ${statusFilter === "in-progress" ? "ring-2 ring-cyan-400" : ""}`}
+          >
             <p className="text-sm text-gray-600 mb-1">In Progress</p>
             <p className="text-3xl font-bold text-cyan-600">{stats.in_progress}</p>
-          </div>
-          <div className="card">
+          </button>
+          <Link
+            href="/dashboard/closed"
+            className="card text-left hover:ring-2 hover:ring-gray-300 transition-all cursor-pointer"
+          >
             <p className="text-sm text-gray-600 mb-1">Closed</p>
             <p className="text-3xl font-bold text-gray-600">{stats.closed}</p>
-          </div>
-          <div className="card">
+          </Link>
+          <button
+            onClick={() => setStatusFilter("urgent")}
+            className={`card text-left hover:ring-2 hover:ring-red-300 transition-all cursor-pointer ${statusFilter === "urgent" ? "ring-2 ring-red-400" : ""}`}
+          >
             <p className="text-sm text-gray-600 mb-1">Urgent Auctions</p>
             <p className="text-3xl font-bold text-red-600">{stats.urgent_auctions}</p>
-          </div>
+          </button>
         </div>
 
         {/* Heat Map */}
@@ -519,6 +546,7 @@ export default function DashboardPage() {
                 <option value="contacted">Contacted</option>
                 <option value="in-progress">In Progress</option>
                 <option value="closed">Closed</option>
+                <option value="urgent">Urgent Auctions</option>
               </select>
             </div>
 
