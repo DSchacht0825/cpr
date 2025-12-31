@@ -120,6 +120,19 @@ export default function ReportsPage() {
   const [adminNoteInput, setAdminNoteInput] = useState("");
   const [savingAdminNote, setSavingAdminNote] = useState(false);
   const [followUpDateInput, setFollowUpDateInput] = useState("");
+  const [editingVisit, setEditingVisit] = useState(false);
+  const [editVisitForm, setEditVisitForm] = useState({
+    visit_outcome: "",
+    contact_name: "",
+    property_condition_notes: "",
+    occupant_situation: "",
+    immediate_needs: "",
+    general_notes: "",
+    requires_follow_up: false,
+    follow_up_date: "",
+    follow_up_notes: "",
+  });
+  const [savingVisit, setSavingVisit] = useState(false);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -381,6 +394,55 @@ export default function ReportsPage() {
     setVisitPhotos([]);
     setAdminNoteInput("");
     setFollowUpDateInput("");
+    setEditingVisit(false);
+  };
+
+  const handleEditVisit = () => {
+    if (!selectedVisit) return;
+    setEditVisitForm({
+      visit_outcome: selectedVisit.visit_outcome || "",
+      contact_name: selectedVisit.contact_name || "",
+      property_condition_notes: selectedVisit.property_condition_notes || "",
+      occupant_situation: selectedVisit.occupant_situation || "",
+      immediate_needs: selectedVisit.immediate_needs || "",
+      general_notes: selectedVisit.general_notes || "",
+      requires_follow_up: selectedVisit.requires_follow_up || false,
+      follow_up_date: selectedVisit.follow_up_date ? selectedVisit.follow_up_date.substring(0, 10) : "",
+      follow_up_notes: selectedVisit.follow_up_notes || "",
+    });
+    setEditingVisit(true);
+  };
+
+  const handleSaveVisit = async () => {
+    if (!selectedVisit) return;
+    setSavingVisit(true);
+    try {
+      const response = await fetch(`/api/worker/visits/${selectedVisit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editVisitForm),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update visit");
+      }
+
+      // Update local state
+      const updatedVisit = {
+        ...selectedVisit,
+        ...editVisitForm,
+      };
+      setSelectedVisit(updatedVisit);
+      setFieldVisits((prev) =>
+        prev.map((v) => (v.id === selectedVisit.id ? updatedVisit : v))
+      );
+      setEditingVisit(false);
+    } catch (err) {
+      console.error("Error updating visit:", err);
+      alert("Failed to update visit. Please try again.");
+    } finally {
+      setSavingVisit(false);
+    }
   };
 
   const saveAdminNote = async () => {
@@ -938,18 +1000,157 @@ export default function ReportsPage() {
                 <div className="mb-6 border-2 border-cyan-200 rounded-lg p-4 bg-cyan-50/30">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-bold text-gray-900">
-                      Visit Details
+                      {editingVisit ? "Edit Visit" : "Visit Details"}
                     </h4>
-                    <button
-                      onClick={closeVisitDetail}
-                      className="text-gray-500 hover:text-gray-700 p-1"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {!editingVisit && (
+                        <button
+                          onClick={handleEditVisit}
+                          className="px-3 py-1 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      <button
+                        onClick={closeVisitDetail}
+                        className="text-gray-500 hover:text-gray-700 p-1"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
+                  {editingVisit ? (
+                    /* Edit Form */
+                    <div className="bg-white rounded-lg p-4 shadow-sm space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Outcome */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Outcome</label>
+                          <select
+                            value={editVisitForm.visit_outcome}
+                            onChange={(e) => setEditVisitForm({ ...editVisitForm, visit_outcome: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          >
+                            <option value="">Select...</option>
+                            <option value="attempt">Attempt (No Contact)</option>
+                            <option value="engagement">Engagement (Client Contact)</option>
+                          </select>
+                        </div>
+
+                        {/* Contact Name */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                          <input
+                            type="text"
+                            value={editVisitForm.contact_name}
+                            onChange={(e) => setEditVisitForm({ ...editVisitForm, contact_name: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Property Condition Notes */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Property Condition Notes</label>
+                        <textarea
+                          value={editVisitForm.property_condition_notes}
+                          onChange={(e) => setEditVisitForm({ ...editVisitForm, property_condition_notes: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+
+                      {/* Occupant Situation */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Occupant Situation</label>
+                        <textarea
+                          value={editVisitForm.occupant_situation}
+                          onChange={(e) => setEditVisitForm({ ...editVisitForm, occupant_situation: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+
+                      {/* Immediate Needs */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Immediate Needs</label>
+                        <textarea
+                          value={editVisitForm.immediate_needs}
+                          onChange={(e) => setEditVisitForm({ ...editVisitForm, immediate_needs: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+
+                      {/* General Notes */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">General Notes</label>
+                        <textarea
+                          value={editVisitForm.general_notes}
+                          onChange={(e) => setEditVisitForm({ ...editVisitForm, general_notes: e.target.value })}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+
+                      {/* Follow-up Section */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="requires_follow_up"
+                            checked={editVisitForm.requires_follow_up}
+                            onChange={(e) => setEditVisitForm({ ...editVisitForm, requires_follow_up: e.target.checked })}
+                            className="h-4 w-4 text-cyan-600 rounded"
+                          />
+                          <label htmlFor="requires_follow_up" className="text-sm font-medium text-gray-700">
+                            Requires Follow-up
+                          </label>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date</label>
+                          <input
+                            type="date"
+                            value={editVisitForm.follow_up_date}
+                            onChange={(e) => setEditVisitForm({ ...editVisitForm, follow_up_date: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Follow-up Notes */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Notes</label>
+                        <textarea
+                          value={editVisitForm.follow_up_notes}
+                          onChange={(e) => setEditVisitForm({ ...editVisitForm, follow_up_notes: e.target.value })}
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={handleSaveVisit}
+                          disabled={savingVisit}
+                          className="flex-1 px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 disabled:opacity-50"
+                        >
+                          {savingVisit ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                          onClick={() => setEditingVisit(false)}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* Visit Info */}
                     <div className="space-y-4">
@@ -1133,6 +1334,7 @@ export default function ReportsPage() {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
               )}
 

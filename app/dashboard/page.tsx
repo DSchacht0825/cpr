@@ -561,6 +561,9 @@ export default function DashboardPage() {
               <Link href="/dashboard/closed" className="text-gray-600 hover:text-gray-800 font-medium">
                 Closed Applications
               </Link>
+              <Link href="/dashboard/duplicates" className="text-amber-600 hover:text-amber-700 font-medium">
+                Duplicates
+              </Link>
               <Link href="/dashboard/reports" className="text-cyan-600 hover:text-cyan-700 font-medium">
                 Reports & Analytics
               </Link>

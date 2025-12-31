@@ -129,14 +129,33 @@ export default function PropertyDetailPage() {
     full_name: "",
     phone_number: "",
     email: "",
+    primary_language: "",
+    preferred_contact_method: "",
     property_address: "",
     property_city: "",
     property_county: "",
     property_zip: "",
+    property_type: "",
+    name_on_title: "",
+    occupant_type: "",
+    is_hoa: false,
     auction_date: "",
     trustee_name: "",
     status: "",
     comments: "",
+    // Crisis indicators
+    has_notice_of_default: false,
+    has_notice_of_trustee_sale: false,
+    cannot_afford_mortgage: false,
+    facing_eviction: false,
+    poor_property_condition: false,
+    wants_to_remain: false,
+    needs_relocation_funds: false,
+    title_holder_deceased: false,
+    tenant_owner_deceased: false,
+    needs_probate_info: false,
+    needs_legal_assistance: false,
+    other_issues: "",
   });
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -306,14 +325,33 @@ export default function PropertyDetailPage() {
         full_name: data.applicant.full_name || "",
         phone_number: data.applicant.phone_number || "",
         email: data.applicant.email || "",
+        primary_language: data.applicant.primary_language || "",
+        preferred_contact_method: data.applicant.preferred_contact_method || "",
         property_address: data.applicant.property_address || "",
         property_city: data.applicant.property_city || "",
         property_county: data.applicant.property_county || "",
         property_zip: data.applicant.property_zip || "",
+        property_type: data.applicant.property_type || "",
+        name_on_title: data.applicant.name_on_title || "",
+        occupant_type: data.applicant.occupant_type || "",
+        is_hoa: data.applicant.is_hoa || false,
         auction_date: data.applicant.auction_date || "",
         trustee_name: data.applicant.trustee_name || "",
         status: data.applicant.status || "",
         comments: data.applicant.comments || "",
+        // Crisis indicators
+        has_notice_of_default: data.applicant.has_notice_of_default || false,
+        has_notice_of_trustee_sale: data.applicant.has_notice_of_trustee_sale || false,
+        cannot_afford_mortgage: data.applicant.cannot_afford_mortgage || false,
+        facing_eviction: data.applicant.facing_eviction || false,
+        poor_property_condition: data.applicant.poor_property_condition || false,
+        wants_to_remain: data.applicant.wants_to_remain || false,
+        needs_relocation_funds: data.applicant.needs_relocation_funds || false,
+        title_holder_deceased: data.applicant.title_holder_deceased || false,
+        tenant_owner_deceased: data.applicant.tenant_owner_deceased || false,
+        needs_probate_info: data.applicant.needs_probate_info || false,
+        needs_legal_assistance: data.applicant.needs_legal_assistance || false,
+        other_issues: data.applicant.other_issues || "",
       });
       setShowEditModal(true);
     }
@@ -870,6 +908,122 @@ export default function PropertyDetailPage() {
                         <option value="closed">Closed</option>
                       </select>
                     </div>
+                  </div>
+                </div>
+
+                {/* Crisis Indicators */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Crisis Indicators</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.has_notice_of_default}
+                        onChange={(e) => setEditForm({ ...editForm, has_notice_of_default: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Notice of Default
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.has_notice_of_trustee_sale}
+                        onChange={(e) => setEditForm({ ...editForm, has_notice_of_trustee_sale: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Notice of Trustee Sale
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.cannot_afford_mortgage}
+                        onChange={(e) => setEditForm({ ...editForm, cannot_afford_mortgage: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Cannot Afford Mortgage
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.facing_eviction}
+                        onChange={(e) => setEditForm({ ...editForm, facing_eviction: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Facing Eviction
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.poor_property_condition}
+                        onChange={(e) => setEditForm({ ...editForm, poor_property_condition: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Poor Property Condition
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.wants_to_remain}
+                        onChange={(e) => setEditForm({ ...editForm, wants_to_remain: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Wants to Remain
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.needs_relocation_funds}
+                        onChange={(e) => setEditForm({ ...editForm, needs_relocation_funds: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Needs Relocation Funds
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.title_holder_deceased}
+                        onChange={(e) => setEditForm({ ...editForm, title_holder_deceased: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Title Holder Deceased
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.tenant_owner_deceased}
+                        onChange={(e) => setEditForm({ ...editForm, tenant_owner_deceased: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Tenant/Owner Deceased
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.needs_probate_info}
+                        onChange={(e) => setEditForm({ ...editForm, needs_probate_info: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Needs Probate Info
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editForm.needs_legal_assistance}
+                        onChange={(e) => setEditForm({ ...editForm, needs_legal_assistance: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 rounded"
+                      />
+                      Needs Legal Assistance
+                    </label>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-sm text-gray-600 mb-1">Other Issues</label>
+                    <textarea
+                      value={editForm.other_issues}
+                      onChange={(e) => setEditForm({ ...editForm, other_issues: e.target.value })}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Describe any other issues..."
+                    />
                   </div>
                 </div>
 
