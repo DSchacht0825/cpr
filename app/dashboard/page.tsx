@@ -306,7 +306,7 @@ export default function DashboardPage() {
 
   const calculateStats = (data: Application[]) => {
     const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const stats = {
       total: data.length,
@@ -317,7 +317,7 @@ export default function DashboardPage() {
       urgent_auctions: data.filter((app) => {
         if (!app.auction_date) return false;
         const auctionDate = new Date(app.auction_date);
-        return auctionDate <= sevenDaysFromNow;
+        return auctionDate <= thirtyDaysFromNow;
       }).length,
     };
 
@@ -331,14 +331,16 @@ export default function DashboardPage() {
     if (statusFilter === "closed") {
       filtered = filtered.filter((app) => app.status === "closed");
     } else if (statusFilter === "urgent") {
-      // Filter for urgent auctions (within 7 days)
+      // Filter for urgent auctions (within 30 days)
       const now = new Date();
-      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       filtered = filtered.filter((app) => {
         if (!app.auction_date) return false;
         const auctionDate = new Date(app.auction_date);
-        return auctionDate <= sevenDaysFromNow;
+        return auctionDate <= thirtyDaysFromNow;
       });
+      // Sort by closest auction date
+      filtered.sort((a, b) => new Date(a.auction_date!).getTime() - new Date(b.auction_date!).getTime());
     } else if (statusFilter !== "all") {
       filtered = filtered.filter((app) => app.status === statusFilter && app.status !== "closed");
     }
@@ -355,7 +357,7 @@ export default function DashboardPage() {
     if (!statsPopup) return [];
 
     const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     switch (statsPopup) {
       case "all":
@@ -370,8 +372,8 @@ export default function DashboardPage() {
         return applications.filter((app) => {
           if (!app.auction_date) return false;
           const auctionDate = new Date(app.auction_date);
-          return auctionDate <= sevenDaysFromNow;
-        });
+          return auctionDate <= thirtyDaysFromNow;
+        }).sort((a, b) => new Date(a.auction_date!).getTime() - new Date(b.auction_date!).getTime());
       default:
         return [];
     }
@@ -383,7 +385,7 @@ export default function DashboardPage() {
       case "pending": return "Pending Applications";
       case "contacted": return "Contacted Applications";
       case "in-progress": return "In Progress Applications";
-      case "urgent": return "Urgent Auctions (within 7 days)";
+      case "urgent": return "Urgent Auctions (within 30 days)";
       default: return "";
     }
   };
