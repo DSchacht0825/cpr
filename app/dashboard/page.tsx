@@ -23,6 +23,7 @@ interface Application {
   email: string;
   phone_number: string;
   property_address: string;
+  property_city?: string;
   property_county: string;
   property_zip: string;
   status: string;
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [deletingAppId, setDeletingAppId] = useState<string | null>(null);
+  const [statsPopup, setStatsPopup] = useState<string | null>(null);
 
   // Admin emails that always have access
   const ADMIN_EMAILS = [
@@ -349,6 +351,43 @@ export default function DashboardPage() {
     setFilteredApplications(filtered);
   };
 
+  const getPopupApplications = () => {
+    if (!statsPopup) return [];
+
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    switch (statsPopup) {
+      case "all":
+        return applications;
+      case "pending":
+        return applications.filter((app) => app.status === "pending");
+      case "contacted":
+        return applications.filter((app) => app.status === "contacted");
+      case "in-progress":
+        return applications.filter((app) => app.status === "in-progress");
+      case "urgent":
+        return applications.filter((app) => {
+          if (!app.auction_date) return false;
+          const auctionDate = new Date(app.auction_date);
+          return auctionDate <= sevenDaysFromNow;
+        });
+      default:
+        return [];
+    }
+  };
+
+  const getPopupTitle = () => {
+    switch (statsPopup) {
+      case "all": return "All Applications";
+      case "pending": return "Pending Applications";
+      case "contacted": return "Contacted Applications";
+      case "in-progress": return "In Progress Applications";
+      case "urgent": return "Urgent Auctions (within 7 days)";
+      default: return "";
+    }
+  };
+
   const toggleZipFilter = (zip: string) => {
     setZipFilter((prev) =>
       prev.includes(zip) ? prev.filter((z) => z !== zip) : [...prev, zip]
@@ -428,6 +467,78 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Stats Popup Modal */}
+      {statsPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">{getPopupTitle()}</h3>
+              <button
+                onClick={() => setStatsPopup(null)}
+                className="text-gray-500 hover:text-gray-700 p-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {getPopupApplications().length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No applications found</p>
+              ) : (
+                <div className="space-y-3">
+                  {getPopupApplications().map((app) => (
+                    <div
+                      key={app.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-cyan-300 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-gray-900">{app.full_name}</h4>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeColor(app.status)}`}>
+                              {app.status}
+                            </span>
+                            {app.auction_date && (
+                              <span className="text-xs text-red-600 font-medium">
+                                Auction: {new Date(app.auction_date).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">{app.property_address}</p>
+                          <p className="text-sm text-gray-500">{app.property_city}, {app.property_county} {app.property_zip}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <a href={`tel:${app.phone_number}`} className="text-cyan-600 hover:text-cyan-700">
+                              {app.phone_number}
+                            </a>
+                            <span className="text-gray-400">|</span>
+                            <span className="text-gray-500">{app.email}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Link
+                            href={`/dashboard/property/${app.id}`}
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 text-center"
+                            onClick={() => setStatsPopup(null)}
+                          >
+                            View/Edit
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <p className="text-sm text-gray-600 text-center">
+                {getPopupApplications().length} application{getPopupApplications().length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -463,46 +574,51 @@ export default function DashboardPage() {
       </nav>
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards - Clickable to filter */}
+        {/* Stats Cards - Clickable to open popup */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <button
-            onClick={() => setStatusFilter("all")}
-            className={`card text-left hover:ring-2 hover:ring-gray-300 transition-all cursor-pointer ${statusFilter === "all" ? "ring-2 ring-gray-400" : ""}`}
+            type="button"
+            onClick={() => setStatsPopup("all")}
+            className="card text-left hover:ring-2 hover:ring-gray-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">Total Applications</p>
             <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
           </button>
           <button
-            onClick={() => setStatusFilter("pending")}
-            className={`card text-left hover:ring-2 hover:ring-yellow-300 transition-all cursor-pointer ${statusFilter === "pending" ? "ring-2 ring-yellow-400" : ""}`}
+            type="button"
+            onClick={() => setStatsPopup("pending")}
+            className="card text-left hover:ring-2 hover:ring-yellow-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">Pending</p>
             <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
           </button>
           <button
-            onClick={() => setStatusFilter("contacted")}
-            className={`card text-left hover:ring-2 hover:ring-blue-300 transition-all cursor-pointer ${statusFilter === "contacted" ? "ring-2 ring-blue-400" : ""}`}
+            type="button"
+            onClick={() => setStatsPopup("contacted")}
+            className="card text-left hover:ring-2 hover:ring-blue-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">Contacted</p>
             <p className="text-3xl font-bold text-blue-600">{stats.contacted}</p>
           </button>
           <button
-            onClick={() => setStatusFilter("in-progress")}
-            className={`card text-left hover:ring-2 hover:ring-cyan-300 transition-all cursor-pointer ${statusFilter === "in-progress" ? "ring-2 ring-cyan-400" : ""}`}
+            type="button"
+            onClick={() => setStatsPopup("in-progress")}
+            className="card text-left hover:ring-2 hover:ring-cyan-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">In Progress</p>
             <p className="text-3xl font-bold text-cyan-600">{stats.in_progress}</p>
           </button>
           <Link
             href="/dashboard/closed"
-            className="card text-left hover:ring-2 hover:ring-gray-300 transition-all cursor-pointer"
+            className="card text-left hover:ring-2 hover:ring-gray-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">Closed</p>
             <p className="text-3xl font-bold text-gray-600">{stats.closed}</p>
           </Link>
           <button
-            onClick={() => setStatusFilter("urgent")}
-            className={`card text-left hover:ring-2 hover:ring-red-300 transition-all cursor-pointer ${statusFilter === "urgent" ? "ring-2 ring-red-400" : ""}`}
+            type="button"
+            onClick={() => setStatsPopup("urgent")}
+            className="card text-left hover:ring-2 hover:ring-red-300 hover:shadow-md transition-all cursor-pointer"
           >
             <p className="text-sm text-gray-600 mb-1">Urgent Auctions</p>
             <p className="text-3xl font-bold text-red-600">{stats.urgent_auctions}</p>
