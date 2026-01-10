@@ -3,14 +3,33 @@ import { supabaseAdmin } from '@/lib/supabase';
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin (only once)
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+function getFirebaseAdmin() {
+  if (admin.apps.length) {
+    return admin;
+  }
+
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.warn('Firebase Admin credentials not configured');
+    return null;
+  }
+
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+    return admin;
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin:', error);
+    return null;
+  }
 }
 
 interface NotificationPayload {
@@ -66,6 +85,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get Firebase Admin
+    const firebaseAdmin = getFirebaseAdmin();
+    if (!firebaseAdmin) {
+      return NextResponse.json(
+        { error: 'Push notifications not configured' },
+        { status: 503 }
+      );
+    }
+
     // Send notifications
     const tokenStrings = tokens.map(t => t.token);
     const message = {
@@ -77,7 +105,7 @@ export async function POST(request: NextRequest) {
       tokens: tokenStrings,
     };
 
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const response = await firebaseAdmin.messaging().sendEachForMulticast(message);
 
     // Log notifications
     const logEntries = tokens.map((t, index) => ({

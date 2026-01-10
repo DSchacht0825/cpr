@@ -3,22 +3,42 @@ import { supabaseAdmin } from '@/lib/supabase';
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin (only once)
-if (!admin.apps.length) {
+function getFirebaseAdmin() {
+  if (admin.apps.length) {
+    return admin;
+  }
+
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.warn('Firebase Admin credentials not configured');
+    return null;
+  }
+
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        projectId,
+        clientEmail,
+        privateKey,
       }),
     });
+    return admin;
   } catch (error) {
-    console.error('Firebase admin init error:', error);
+    console.error('Failed to initialize Firebase Admin:', error);
+    return null;
   }
 }
 
 async function sendNotification(tokens: string[], title: string, body: string, data: Record<string, string>) {
   if (!tokens.length) return { successCount: 0, failureCount: 0 };
+
+  const firebaseAdmin = getFirebaseAdmin();
+  if (!firebaseAdmin) {
+    return { successCount: 0, failureCount: tokens.length };
+  }
 
   try {
     const message = {
@@ -26,7 +46,7 @@ async function sendNotification(tokens: string[], title: string, body: string, d
       data,
       tokens,
     };
-    return await admin.messaging().sendEachForMulticast(message);
+    return await firebaseAdmin.messaging().sendEachForMulticast(message);
   } catch (error) {
     console.error('Send notification error:', error);
     return { successCount: 0, failureCount: tokens.length };
