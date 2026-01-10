@@ -9,11 +9,26 @@ export async function GET(
     const { id } = await params;
     console.log('Fetching visits for applicant:', id);
 
-    // Fetch all visits for this applicant
+    // First get the applicant to get their address
+    const { data: applicant, error: applicantError } = await supabaseAdmin
+      .from('applicants')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (applicantError) {
+      console.error('Supabase error fetching applicant:', applicantError);
+      return NextResponse.json(
+        { error: 'Failed to fetch applicant', details: applicantError.message },
+        { status: 500 }
+      );
+    }
+
+    // Fetch visits by applicant_id OR by matching address
     const { data: visits, error: visitsError } = await supabaseAdmin
       .from('field_visits')
       .select('*')
-      .eq('applicant_id', id)
+      .or(`applicant_id.eq.${id},location_address.ilike.%${applicant.property_address}%`)
       .order('visit_date', { ascending: false });
 
     // Fetch worker info separately if there are visits
@@ -38,21 +53,6 @@ export async function GET(
       console.error('Supabase error fetching visits:', visitsError);
       return NextResponse.json(
         { error: 'Failed to fetch visits', details: visitsError.message },
-        { status: 500 }
-      );
-    }
-
-    // Also fetch the applicant details
-    const { data: applicant, error: applicantError } = await supabaseAdmin
-      .from('applicants')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (applicantError) {
-      console.error('Supabase error fetching applicant:', applicantError);
-      return NextResponse.json(
-        { error: 'Failed to fetch applicant', details: applicantError.message },
         { status: 500 }
       );
     }
