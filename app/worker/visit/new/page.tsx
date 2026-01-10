@@ -93,6 +93,8 @@ function NewFieldVisitContent() {
     follow_up_time: "",
     follow_up_notes: "",
     interest_level: "", // not_interested, interested_online, applied_with_worker
+    has_urgent_auction: "", // yes or no - required for attempts
+    urgent_auction_date: "",
   });
 
   // Check for follow-up parameters
@@ -341,9 +343,21 @@ function NewFieldVisitContent() {
       return;
     }
 
-    // Validate: Attempts require at least one photo
-    if (formData.visit_outcome === "attempt" && photos.length === 0) {
-      alert("Photo required for visit attempts. Please take a photo to verify you were at the location.");
+    // Validate: All visits require at least one photo
+    if (photos.length === 0) {
+      alert("Photo required for all visits. Please take a photo to verify you were at the location.");
+      return;
+    }
+
+    // Validate: Urgent auction question is required for all visits
+    if (!formData.has_urgent_auction) {
+      alert("Please answer whether there is an urgent auction.");
+      return;
+    }
+
+    // Validate: If urgent auction is yes, date is required
+    if (formData.has_urgent_auction === "yes" && !formData.urgent_auction_date) {
+      alert("Please enter the auction date.");
       return;
     }
 
@@ -685,10 +699,59 @@ function NewFieldVisitContent() {
                     <span className="text-xs">Met with client</span>
                   </button>
                 </div>
-                {formData.visit_outcome === "attempt" && (
-                  <p className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
-                    Photo required to verify visit attempt. A follow-up reminder will be scheduled.
-                  </p>
+                <p className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
+                  Photo required for all visits.{formData.visit_outcome === "attempt" && " A follow-up reminder will be scheduled."}
+                </p>
+              </div>
+
+              {/* Urgent Auction Question */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Is there an urgent auction? *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, has_urgent_auction: "yes" }))}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      formData.has_urgent_auction === "yes"
+                        ? "border-red-500 bg-red-50 text-red-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="font-semibold">Yes</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, has_urgent_auction: "no", urgent_auction_date: "" }))}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      formData.has_urgent_auction === "no"
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="font-semibold">No</span>
+                  </button>
+                </div>
+                {!formData.has_urgent_auction && (
+                  <p className="mt-1 text-sm text-red-600">Required: Please select Yes or No</p>
+                )}
+                {formData.has_urgent_auction === "yes" && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Auction Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="urgent_auction_date"
+                      value={formData.urgent_auction_date}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900 text-base"
+                    />
+                    {!formData.urgent_auction_date && (
+                      <p className="mt-1 text-sm text-red-600">Required: Please enter the auction date</p>
+                    )}
+                  </div>
                 )}
               </div>
 

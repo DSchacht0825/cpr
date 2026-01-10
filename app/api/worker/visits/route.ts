@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       latitude: body.latitude || null,
       longitude: body.longitude || null,
       interest_level: body.interest_level || null,
+      has_urgent_auction: body.has_urgent_auction || null,
+      urgent_auction_date: body.urgent_auction_date || null,
     };
 
     const { data, error } = await supabaseAdmin
