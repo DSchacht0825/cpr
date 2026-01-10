@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import admin from 'firebase-admin';
 
-// Initialize Firebase Admin (only once)
-function getFirebaseAdmin() {
+interface NotificationPayload {
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  userIds?: string[];
+  sendToAll?: boolean;
+  roles?: string[];
+}
+
+async function getFirebaseAdmin() {
+  const admin = (await import('firebase-admin')).default;
+
   if (admin.apps.length) {
     return admin;
   }
@@ -30,15 +39,6 @@ function getFirebaseAdmin() {
     console.error('Failed to initialize Firebase Admin:', error);
     return null;
   }
-}
-
-interface NotificationPayload {
-  title: string;
-  body: string;
-  data?: Record<string, string>;
-  userIds?: string[];
-  sendToAll?: boolean;
-  roles?: string[];
 }
 
 export async function POST(request: NextRequest) {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Firebase Admin
-    const firebaseAdmin = getFirebaseAdmin();
+    const firebaseAdmin = await getFirebaseAdmin();
     if (!firebaseAdmin) {
       return NextResponse.json(
         { error: 'Push notifications not configured' },

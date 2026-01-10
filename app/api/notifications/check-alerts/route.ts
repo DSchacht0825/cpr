@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import admin from 'firebase-admin';
 
-// Initialize Firebase Admin (only once)
-function getFirebaseAdmin() {
+async function getFirebaseAdmin() {
+  const admin = (await import('firebase-admin')).default;
+
   if (admin.apps.length) {
     return admin;
   }
@@ -13,7 +13,6 @@ function getFirebaseAdmin() {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (!projectId || !clientEmail || !privateKey) {
-    console.warn('Firebase Admin credentials not configured');
     return null;
   }
 
@@ -26,8 +25,7 @@ function getFirebaseAdmin() {
       }),
     });
     return admin;
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
+  } catch {
     return null;
   }
 }
@@ -35,7 +33,7 @@ function getFirebaseAdmin() {
 async function sendNotification(tokens: string[], title: string, body: string, data: Record<string, string>) {
   if (!tokens.length) return { successCount: 0, failureCount: 0 };
 
-  const firebaseAdmin = getFirebaseAdmin();
+  const firebaseAdmin = await getFirebaseAdmin();
   if (!firebaseAdmin) {
     return { successCount: 0, failureCount: tokens.length };
   }
@@ -47,15 +45,13 @@ async function sendNotification(tokens: string[], title: string, body: string, d
       tokens,
     };
     return await firebaseAdmin.messaging().sendEachForMulticast(message);
-  } catch (error) {
-    console.error('Send notification error:', error);
+  } catch {
     return { successCount: 0, failureCount: tokens.length };
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify this is an authorized request (add your own auth)
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
@@ -65,13 +61,10 @@ export async function POST(request: NextRequest) {
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-
-    // Get dates for urgent auction alerts (within 7 days)
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
     const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
 
-    // Get all active device tokens for field workers and admins
     const { data: deviceTokens } = await supabaseAdmin
       .from('device_tokens')
       .select('token, user_id, user_profiles!inner(role, full_name)')
@@ -85,7 +78,6 @@ export async function POST(request: NextRequest) {
     const allTokens = deviceTokens.map(d => d.token);
     const results = { followUps: 0, urgentAuctions: 0, sent: 0, failed: 0 };
 
-    // Check for follow-ups due today
     const { data: dueFollowUps } = await supabaseAdmin
       .from('field_visits')
       .select('id, location_address, follow_up_date, contact_name, staff_member')
@@ -96,7 +88,6 @@ export async function POST(request: NextRequest) {
     if (dueFollowUps && dueFollowUps.length > 0) {
       results.followUps = dueFollowUps.length;
 
-      // Send notification for each follow-up
       for (const followUp of dueFollowUps) {
         const title = 'Follow-up Due Today';
         const body = `Follow-up needed at ${followUp.location_address}${followUp.contact_name ? ` for ${followUp.contact_name}` : ''}`;
@@ -110,7 +101,6 @@ export async function POST(request: NextRequest) {
         results.sent += response.successCount;
         results.failed += response.failureCount;
 
-        // Mark as sent
         await supabaseAdmin
           .from('field_visits')
           .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
@@ -118,7 +108,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for urgent auctions (within 7 days)
     const { data: urgentAuctions } = await supabaseAdmin
       .from('applicants')
       .select('id, full_name, property_address, auction_date')
@@ -130,7 +119,6 @@ export async function POST(request: NextRequest) {
     if (urgentAuctions && urgentAuctions.length > 0) {
       results.urgentAuctions = urgentAuctions.length;
 
-      // Send one consolidated notification for urgent auctions
       const title = `${urgentAuctions.length} Urgent Auction${urgentAuctions.length > 1 ? 's' : ''} This Week`;
       const auctionList = urgentAuctions.slice(0, 3).map(a =>
         `${a.full_name} - ${new Date(a.auction_date!).toLocaleDateString()}`
@@ -149,23 +137,9 @@ export async function POST(request: NextRequest) {
       results.failed += response.failureCount;
     }
 
-    // Log the check
-    await supabaseAdmin.from('notification_log').insert({
-      notification_type: 'daily_check',
-      title: 'Daily Alert Check',
-      body: `Found ${results.followUps} follow-ups, ${results.urgentAuctions} urgent auctions`,
-      data: results,
-    });
-
-    return NextResponse.json({
-      success: true,
-      ...results,
-    }, { status: 200 });
+    return NextResponse.json({ success: true, ...results }, { status: 200 });
   } catch (error) {
     console.error('Error checking alerts:', error);
-    return NextResponse.json(
-      { error: 'Failed to check alerts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to check alerts' }, { status: 500 });
   }
 }
