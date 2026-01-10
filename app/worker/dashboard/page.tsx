@@ -51,6 +51,19 @@ interface RecentVisit {
   attempt_count?: number;
 }
 
+interface SearchResult {
+  id: string;
+  full_name: string;
+  phone_number: string;
+  email: string;
+  property_address: string;
+  property_city: string;
+  property_county: string;
+  property_zip: string;
+  status: string;
+  auction_date?: string;
+}
+
 // Helper to extract time from follow_up_notes
 const extractFollowUpTime = (notes?: string): string | null => {
   if (!notes) return null;
@@ -70,6 +83,14 @@ export default function WorkerDashboardPage() {
   const [assignedCases, setAssignedCases] = useState<AssignedCase[]>([]);
   const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchAuctionDate, setSearchAuctionDate] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchType, setSearchType] = useState<"text" | "auction">("text");
 
   useEffect(() => {
     // Check for session
@@ -122,6 +143,35 @@ export default function WorkerDashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem("worker_session");
     router.push("/worker");
+  };
+
+  const handleSearch = async () => {
+    if (searchType === "text" && searchQuery.length < 2) return;
+    if (searchType === "auction" && !searchAuctionDate) return;
+
+    setSearching(true);
+    try {
+      const params = searchType === "auction"
+        ? `auction_date=${searchAuctionDate}`
+        : `q=${encodeURIComponent(searchQuery)}`;
+
+      const response = await fetch(`/api/applicants/search?${params}`);
+      const result = await response.json();
+      if (response.ok) {
+        setSearchResults(result.data || []);
+      }
+    } catch (err) {
+      console.error("Search failed:", err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchAuctionDate("");
+    setSearchResults([]);
+    setShowSearch(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -200,8 +250,135 @@ export default function WorkerDashboardPage() {
         </div>
       </header>
 
+      {/* Search Modal */}
+      {showSearch && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
+          <div className="bg-white w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <h3 className="font-semibold text-gray-900">Search Customers</h3>
+              <button
+                onClick={clearSearch}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4">
+              {/* Search Type Tabs */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => { setSearchType("text"); setSearchResults([]); }}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    searchType === "text"
+                      ? "bg-cyan-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Name / Address
+                </button>
+                <button
+                  onClick={() => { setSearchType("auction"); setSearchResults([]); }}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    searchType === "auction"
+                      ? "bg-cyan-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Auction Date
+                </button>
+              </div>
+
+              {/* Search Input */}
+              {searchType === "text" ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    placeholder="Search by name, address, phone..."
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                  />
+                  <button
+                    onClick={handleSearch}
+                    disabled={searching || searchQuery.length < 2}
+                    className="px-4 py-3 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 disabled:opacity-50"
+                  >
+                    {searching ? "..." : "Search"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={searchAuctionDate}
+                    onChange={(e) => setSearchAuctionDate(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                  />
+                  <button
+                    onClick={handleSearch}
+                    disabled={searching || !searchAuctionDate}
+                    className="px-4 py-3 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 disabled:opacity-50"
+                  >
+                    {searching ? "..." : "Search"}
+                  </button>
+                </div>
+              )}
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="mt-4 max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+                  {searchResults.map((result) => (
+                    <Link
+                      key={result.id}
+                      href={`/dashboard/property/${result.id}`}
+                      onClick={() => setShowSearch(false)}
+                      className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-gray-900">{result.full_name}</p>
+                          <p className="text-sm text-gray-600">{result.property_address}</p>
+                          <p className="text-xs text-gray-500">
+                            {result.property_city}, {result.property_county} {result.property_zip}
+                          </p>
+                        </div>
+                        {result.auction_date && (
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                            Auction: {formatDate(result.auction_date)}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {searchResults.length === 0 && (searchQuery.length >= 2 || searchAuctionDate) && !searching && (
+                <p className="mt-4 text-center text-gray-500">No results found</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Quick Actions */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowSearch(true)}
+            className="w-full bg-white border-2 border-cyan-600 text-cyan-600 rounded-xl p-4 text-center font-semibold hover:bg-cyan-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Search Customers
+          </button>
+        </div>
+
         <div className="mb-6">
           <Link
             href="/worker/visit/new"
