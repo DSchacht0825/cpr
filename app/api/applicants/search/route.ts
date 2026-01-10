@@ -5,16 +5,24 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const auctionDate = searchParams.get('auction_date') || '';
+    const auctionStart = searchParams.get('auction_start') || '';
+    const auctionEnd = searchParams.get('auction_end') || '';
 
-    // If searching by auction date
-    if (auctionDate) {
-      const { data, error } = await supabaseAdmin
+    // If searching by auction date range
+    if (auctionStart) {
+      let queryBuilder = supabaseAdmin
         .from('applicants')
         .select('id, full_name, phone_number, email, property_address, property_city, property_county, property_zip, status, auction_date, created_at')
-        .eq('auction_date', auctionDate)
+        .not('auction_date', 'is', null)
+        .gte('auction_date', auctionStart);
+
+      if (auctionEnd) {
+        queryBuilder = queryBuilder.lte('auction_date', auctionEnd);
+      }
+
+      const { data, error } = await queryBuilder
         .order('auction_date', { ascending: true })
-        .limit(50);
+        .limit(100);
 
       if (error) {
         console.error('Supabase error:', error);

@@ -87,7 +87,8 @@ export default function WorkerDashboardPage() {
   // Search state
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchAuctionDate, setSearchAuctionDate] = useState("");
+  const [searchAuctionDateStart, setSearchAuctionDateStart] = useState("");
+  const [searchAuctionDateEnd, setSearchAuctionDateEnd] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchType, setSearchType] = useState<"text" | "auction">("text");
@@ -147,12 +148,12 @@ export default function WorkerDashboardPage() {
 
   const handleSearch = async () => {
     if (searchType === "text" && searchQuery.length < 2) return;
-    if (searchType === "auction" && !searchAuctionDate) return;
+    if (searchType === "auction" && !searchAuctionDateStart) return;
 
     setSearching(true);
     try {
       const params = searchType === "auction"
-        ? `auction_date=${searchAuctionDate}`
+        ? `auction_start=${searchAuctionDateStart}&auction_end=${searchAuctionDateEnd || searchAuctionDateStart}`
         : `q=${encodeURIComponent(searchQuery)}`;
 
       const response = await fetch(`/api/applicants/search?${params}`);
@@ -169,7 +170,8 @@ export default function WorkerDashboardPage() {
 
   const clearSearch = () => {
     setSearchQuery("");
-    setSearchAuctionDate("");
+    setSearchAuctionDateStart("");
+    setSearchAuctionDateEnd("");
     setSearchResults([]);
     setShowSearch(false);
   };
@@ -311,19 +313,33 @@ export default function WorkerDashboardPage() {
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={searchAuctionDate}
-                    onChange={(e) => setSearchAuctionDate(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
-                  />
+                <div className="space-y-3">
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">From</label>
+                      <input
+                        type="date"
+                        value={searchAuctionDateStart}
+                        onChange={(e) => setSearchAuctionDateStart(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">To</label>
+                      <input
+                        type="date"
+                        value={searchAuctionDateEnd}
+                        onChange={(e) => setSearchAuctionDateEnd(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                      />
+                    </div>
+                  </div>
                   <button
                     onClick={handleSearch}
-                    disabled={searching || !searchAuctionDate}
-                    className="px-4 py-3 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 disabled:opacity-50"
+                    disabled={searching || !searchAuctionDateStart}
+                    className="w-full px-4 py-3 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 disabled:opacity-50"
                   >
-                    {searching ? "..." : "Search"}
+                    {searching ? "Searching..." : "Search Auctions"}
                   </button>
                 </div>
               )}
@@ -357,7 +373,7 @@ export default function WorkerDashboardPage() {
                 </div>
               )}
 
-              {searchResults.length === 0 && (searchQuery.length >= 2 || searchAuctionDate) && !searching && (
+              {searchResults.length === 0 && (searchQuery.length >= 2 || searchAuctionDateStart) && !searching && (
                 <p className="mt-4 text-center text-gray-500">No results found</p>
               )}
             </div>
