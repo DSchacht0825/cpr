@@ -1,4 +1,6 @@
-import { initializeApp, getApps } from 'firebase/app';
+'use client';
+
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -11,41 +13,60 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-
+let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 
-// Only initialize messaging on client side
-if (typeof window !== 'undefined') {
+function initializeFirebase() {
+  if (typeof window === 'undefined') return;
+
   try {
-    messaging = getMessaging(app);
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApps()[0];
+    }
+
+    if (app && 'Notification' in window) {
+      messaging = getMessaging(app);
+    }
   } catch (error) {
-    console.error('Firebase messaging not supported:', error);
+    console.error('Firebase init error:', error);
   }
 }
 
-export { app, messaging };
-
 // Request notification permission and get FCM token
 export async function requestNotificationPermission(): Promise<string | null> {
-  if (typeof window === 'undefined' || !messaging) {
+  if (typeof window === 'undefined') {
+    console.log('Not in browser');
+    return null;
+  }
+
+  // Initialize Firebase if not already done
+  if (!app) {
+    initializeFirebase();
+  }
+
+  if (!messaging) {
+    console.log('Messaging not available');
     return null;
   }
 
   try {
+    console.log('Requesting notification permission...');
     const permission = await Notification.requestPermission();
+    console.log('Permission result:', permission);
+
     if (permission !== 'granted') {
       console.log('Notification permission denied');
       return null;
     }
 
     // Get FCM token
-    const token = await getToken(messaging, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-    });
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+    console.log('Getting FCM token with VAPID key:', vapidKey ? 'present' : 'missing');
 
-    console.log('FCM Token:', token);
+    const token = await getToken(messaging, { vapidKey });
+    console.log('FCM Token received:', token ? 'yes' : 'no');
     return token;
   } catch (error) {
     console.error('Error getting notification permission:', error);
@@ -55,7 +76,15 @@ export async function requestNotificationPermission(): Promise<string | null> {
 
 // Listen for foreground messages
 export function onForegroundMessage(callback: (payload: unknown) => void) {
-  if (typeof window === 'undefined' || !messaging) {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  if (!app) {
+    initializeFirebase();
+  }
+
+  if (!messaging) {
     return () => {};
   }
 
