@@ -337,15 +337,15 @@ function NewFieldVisitContent() {
     e.preventDefault();
     if (!session) return;
 
-    // Validate: Interest level is required for engagements only
-    if (formData.visit_outcome === "engagement" && !formData.interest_level) {
+    // Validate: Interest level is required for engagements (in-person and phone)
+    if ((formData.visit_outcome === "engagement" || formData.visit_outcome === "phone_engagement") && !formData.interest_level) {
       alert("Please select the client's interest level before saving.");
       return;
     }
 
-    // Validate: All visits require at least one photo
-    if (photos.length === 0) {
-      alert("Photo required for all visits. Please take a photo to verify you were at the location.");
+    // Validate: Photo required for attempts and in-person engagements (not phone)
+    if (formData.visit_outcome !== "phone_engagement" && photos.length === 0) {
+      alert("Photo required. Please take a photo to verify you were at the location.");
       return;
     }
 
@@ -662,46 +662,67 @@ function NewFieldVisitContent() {
                 </div>
               )}
 
-              {/* Visit Outcome - Attempt vs Engagement */}
+              {/* Visit Outcome - Attempt, Engagement, or Phone Engagement */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Visit Outcome *
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setFormData((prev) => ({ ...prev, visit_outcome: "attempt" }))}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       formData.visit_outcome === "attempt"
                         ? "border-amber-500 bg-amber-50 text-amber-700"
                         : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span className="font-semibold block">Attempt</span>
+                    <span className="font-semibold block text-sm">Attempt</span>
                     <span className="text-xs">No one home</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData((prev) => ({ ...prev, visit_outcome: "engagement" }))}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       formData.visit_outcome === "engagement"
                         ? "border-green-500 bg-green-50 text-green-700"
                         : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    <span className="font-semibold block">Engagement</span>
-                    <span className="text-xs">Met with client</span>
+                    <span className="font-semibold block text-sm">Engagement</span>
+                    <span className="text-xs">Met client</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, visit_outcome: "phone_engagement" }))}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      formData.visit_outcome === "phone_engagement"
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span className="font-semibold block text-sm">Phone</span>
+                    <span className="text-xs">Called client</span>
                   </button>
                 </div>
-                <p className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
-                  Photo required for all visits.{formData.visit_outcome === "attempt" && " A follow-up reminder will be scheduled."}
-                </p>
+                {formData.visit_outcome === "phone_engagement" ? (
+                  <p className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded-lg">
+                    Phone engagement - no photo required.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
+                    Photo required.{formData.visit_outcome === "attempt" && " A follow-up reminder will be scheduled."}
+                  </p>
+                )}
               </div>
 
               {/* Urgent Auction Question */}
@@ -975,12 +996,12 @@ function NewFieldVisitContent() {
           {/* Follow Up & Interest Level */}
           <section className="bg-white rounded-xl p-4 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-4">
-              {formData.visit_outcome === "engagement" ? "Follow Up & Interest Level" : "Follow Up"}
+              {(formData.visit_outcome === "engagement" || formData.visit_outcome === "phone_engagement") ? "Follow Up & Interest Level" : "Follow Up"}
             </h2>
 
             <div className="space-y-4">
-              {/* Interest Level - Only show for engagements */}
-              {formData.visit_outcome === "engagement" && (
+              {/* Interest Level - Show for engagements and phone engagements */}
+              {(formData.visit_outcome === "engagement" || formData.visit_outcome === "phone_engagement") && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Client Interest Level *
@@ -1101,8 +1122,8 @@ function NewFieldVisitContent() {
               {submitting ? "Saving Visit..." : "Save Field Visit"}
             </button>
 
-            {/* Application Button - Only show for engagements */}
-            {formData.visit_outcome === "engagement" && (
+            {/* Application Button - Show for engagements and phone engagements */}
+            {(formData.visit_outcome === "engagement" || formData.visit_outcome === "phone_engagement") && (
               <Link
                 href={`/worker/application${selectedApplicant ? `?applicant=${selectedApplicant.id}&name=${encodeURIComponent(selectedApplicant.full_name)}&address=${encodeURIComponent(selectedApplicant.property_address)}&phone=${encodeURIComponent(selectedApplicant.phone_number || '')}&email=${encodeURIComponent(selectedApplicant.email || '')}` : `?address=${encodeURIComponent(formData.location_address)}&name=${encodeURIComponent(formData.contact_name)}&phone=${encodeURIComponent(formData.contact_phone)}&email=${encodeURIComponent(formData.contact_email)}`}`}
                 className="block w-full bg-green-600 text-white py-4 px-6 rounded-xl font-semibold text-lg text-center hover:bg-green-700 focus:ring-4 focus:ring-green-200 transition-all"
