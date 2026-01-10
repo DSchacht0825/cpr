@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { requestNotificationPermission, onForegroundMessage } from "@/lib/firebase";
 
 interface WorkerSession {
   user: {
@@ -93,6 +94,10 @@ export default function WorkerDashboardPage() {
   const [searching, setSearching] = useState(false);
   const [searchType, setSearchType] = useState<"text" | "auction">("text");
 
+  // Notification state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
   useEffect(() => {
     // Check for session
     const storedSession = localStorage.getItem("worker_session");
@@ -106,6 +111,27 @@ export default function WorkerDashboardPage() {
       setSession(parsed);
       fetchAssignedCases(parsed.user.id, parsed.session.access_token);
       fetchRecentVisits(parsed.user.id, parsed.session.access_token);
+
+      // Check notification permission status
+      if (typeof window !== "undefined" && "Notification" in window) {
+        setNotificationsEnabled(Notification.permission === "granted");
+      }
+
+      // Register service worker for push notifications
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(console.error);
+      }
+
+      // Listen for foreground messages
+      const unsubscribe = onForegroundMessage((payload: unknown) => {
+        const p = payload as { notification?: { title?: string; body?: string } };
+        if (p.notification) {
+          // Show a toast or alert for foreground messages
+          alert(`${p.notification.title}\n${p.notification.body}`);
+        }
+      });
+
+      return () => unsubscribe();
     } catch {
       router.push("/worker");
     }
@@ -144,6 +170,32 @@ export default function WorkerDashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem("worker_session");
     router.push("/worker");
+  };
+
+  const enableNotifications = async () => {
+    if (!session) return;
+    setNotificationLoading(true);
+
+    try {
+      const token = await requestNotificationPermission();
+      if (token) {
+        // Register the token with the server
+        await fetch("/api/notifications/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: session.user.id,
+            token,
+            deviceType: "web",
+          }),
+        });
+        setNotificationsEnabled(true);
+      }
+    } catch (error) {
+      console.error("Failed to enable notifications:", error);
+    } finally {
+      setNotificationLoading(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -242,12 +294,33 @@ export default function WorkerDashboardPage() {
                 </div>
               )}
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Notification button */}
+              {!notificationsEnabled ? (
+                <button
+                  onClick={enableNotifications}
+                  disabled={notificationLoading}
+                  className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded-full transition-colors"
+                  title="Enable notifications"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </button>
+              ) : (
+                <span className="p-2 text-green-600" title="Notifications enabled">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </header>
