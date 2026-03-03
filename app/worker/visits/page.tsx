@@ -94,7 +94,7 @@ export default function WorkerVisitsPage() {
 
   const fetchVisits = async (userId: string) => {
     try {
-      const response = await fetch(`/api/worker/visits?userId=${userId}&limit=100`);
+      const response = await fetch(`/api/worker/visits?userId=${userId}&limit=1000`);
       const result = await response.json();
       if (response.ok) {
         setVisits(result.data || []);

@@ -96,8 +96,10 @@ interface ReportMetrics {
   // Attempt vs Engagement metrics
   totalAttempts: number;
   totalEngagements: number;
+  totalPhoneEngagements: number;
   attemptsByWorker: Record<string, number>;
   engagementsByWorker: Record<string, number>;
+  phoneEngagementsByWorker: Record<string, number>;
   engagementRate: number; // percentage
 }
 
@@ -113,7 +115,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<"map" | "metrics" | "inactive" | "worker" | "outcomes" | "export">("map");
   const [selectedWorker, setSelectedWorker] = useState<string>("");
   const [selectedCard, setSelectedCard] = useState<"applications" | "visits" | "pending" | "urgent" | null>(null);
-  const [selectedMetricCard, setSelectedMetricCard] = useState<"attempts" | "engagements" | "followups" | "status" | "county" | "visitType" | "visitWorker" | null>(null);
+  const [selectedMetricCard, setSelectedMetricCard] = useState<"attempts" | "engagements" | "phone" | "followups" | "status" | "county" | "visitType" | "visitWorker" | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<FieldVisit | null>(null);
   const [visitPhotos, setVisitPhotos] = useState<VisitPhoto[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
@@ -240,6 +242,7 @@ export default function ReportsPage() {
     const visitsByWorker: Record<string, number> = {};
     const attemptsByWorker: Record<string, number> = {};
     const engagementsByWorker: Record<string, number> = {};
+    const phoneEngagementsByWorker: Record<string, number> = {};
 
     filteredApps.forEach((app) => {
       applicationsByCounty[app.property_county] =
@@ -250,6 +253,7 @@ export default function ReportsPage() {
 
     let totalAttempts = 0;
     let totalEngagements = 0;
+    let totalPhoneEngagements = 0;
 
     filteredVisits.forEach((visit) => {
       visitsByType[visit.visit_type] = (visitsByType[visit.visit_type] || 0) + 1;
@@ -257,18 +261,21 @@ export default function ReportsPage() {
       const workerName = worker?.full_name || "Unknown";
       visitsByWorker[workerName] = (visitsByWorker[workerName] || 0) + 1;
 
-      // Track attempt vs engagement
+      // Track attempt vs engagement vs phone engagement
       if (visit.visit_outcome === "attempt") {
         totalAttempts++;
         attemptsByWorker[workerName] = (attemptsByWorker[workerName] || 0) + 1;
       } else if (visit.visit_outcome === "engagement") {
         totalEngagements++;
         engagementsByWorker[workerName] = (engagementsByWorker[workerName] || 0) + 1;
+      } else if (visit.visit_outcome === "phone_engagement") {
+        totalPhoneEngagements++;
+        phoneEngagementsByWorker[workerName] = (phoneEngagementsByWorker[workerName] || 0) + 1;
       }
     });
 
     const engagementRate = filteredVisits.length > 0
-      ? Math.round((totalEngagements / filteredVisits.length) * 100)
+      ? Math.round(((totalEngagements + totalPhoneEngagements) / filteredVisits.length) * 100)
       : 0;
 
     setMetrics({
@@ -294,8 +301,10 @@ export default function ReportsPage() {
       visitsByWorker,
       totalAttempts,
       totalEngagements,
+      totalPhoneEngagements,
       attemptsByWorker,
       engagementsByWorker,
+      phoneEngagementsByWorker,
       engagementRate,
     });
   };
@@ -872,7 +881,7 @@ export default function ReportsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Worker Accountability: Attempts vs Engagements
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <button
                   onClick={() => setSelectedMetricCard(selectedMetricCard === "attempts" ? null : "attempts")}
                   className={`bg-amber-50 rounded-lg p-4 text-center hover:ring-2 hover:ring-amber-400 transition-all cursor-pointer ${selectedMetricCard === "attempts" ? "ring-2 ring-amber-500" : ""}`}
@@ -888,8 +897,17 @@ export default function ReportsPage() {
                 >
                   <p className="text-3xl font-bold text-green-600">{metrics.totalEngagements}</p>
                   <p className="text-sm text-green-700">Engagements</p>
-                  <p className="text-xs text-gray-500">Client contact</p>
+                  <p className="text-xs text-gray-500">In-person contact</p>
                   <p className="text-xs text-green-600 mt-1">Click to view</p>
+                </button>
+                <button
+                  onClick={() => setSelectedMetricCard(selectedMetricCard === "phone" ? null : "phone")}
+                  className={`bg-blue-50 rounded-lg p-4 text-center hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer ${selectedMetricCard === "phone" ? "ring-2 ring-blue-500" : ""}`}
+                >
+                  <p className="text-3xl font-bold text-blue-600">{metrics.totalPhoneEngagements}</p>
+                  <p className="text-sm text-blue-700">Phone Visits</p>
+                  <p className="text-xs text-gray-500">Phone contact</p>
+                  <p className="text-xs text-blue-600 mt-1">Click to view</p>
                 </button>
                 <div className="bg-cyan-50 rounded-lg p-4 text-center">
                   <p className="text-3xl font-bold text-cyan-600">{metrics.engagementRate}%</p>
@@ -908,12 +926,13 @@ export default function ReportsPage() {
               </div>
 
               {/* Detail Panel for Attempts/Engagements/Follow-ups */}
-              {(selectedMetricCard === "attempts" || selectedMetricCard === "engagements" || selectedMetricCard === "followups") && !selectedVisit && (
+              {(selectedMetricCard === "attempts" || selectedMetricCard === "engagements" || selectedMetricCard === "phone" || selectedMetricCard === "followups") && !selectedVisit && (
                 <div className="mb-6 border-2 border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-bold text-gray-900">
                       {selectedMetricCard === "attempts" && "All Attempts (No Contact)"}
-                      {selectedMetricCard === "engagements" && "All Engagements (Client Contact)"}
+                      {selectedMetricCard === "engagements" && "All Engagements (In-Person Contact)"}
+                      {selectedMetricCard === "phone" && "All Phone Engagements"}
                       {selectedMetricCard === "followups" && "Pending Follow-ups"}
                     </h4>
                     <button
@@ -944,6 +963,8 @@ export default function ReportsPage() {
                             filteredVisits = fieldVisits.filter(v => v.visit_outcome === "attempt");
                           } else if (selectedMetricCard === "engagements") {
                             filteredVisits = fieldVisits.filter(v => v.visit_outcome === "engagement");
+                          } else if (selectedMetricCard === "phone") {
+                            filteredVisits = fieldVisits.filter(v => v.visit_outcome === "phone_engagement");
                           } else if (selectedMetricCard === "followups") {
                             filteredVisits = fieldVisits.filter(v => v.requires_follow_up);
                           }
@@ -1350,6 +1371,7 @@ export default function ReportsPage() {
                           <th className="text-center py-2 text-gray-600">Total Visits</th>
                           <th className="text-center py-2 text-amber-600">Attempts</th>
                           <th className="text-center py-2 text-green-600">Engagements</th>
+                          <th className="text-center py-2 text-blue-600">Phone</th>
                           <th className="text-center py-2 text-gray-600">Engagement Rate</th>
                         </tr>
                       </thead>
@@ -1359,13 +1381,15 @@ export default function ReportsPage() {
                           .map(([worker, total]) => {
                             const attempts = metrics.attemptsByWorker[worker] || 0;
                             const engagements = metrics.engagementsByWorker[worker] || 0;
-                            const rate = total > 0 ? Math.round((engagements / total) * 100) : 0;
+                            const phoneEngagements = metrics.phoneEngagementsByWorker[worker] || 0;
+                            const rate = total > 0 ? Math.round(((engagements + phoneEngagements) / total) * 100) : 0;
                             return (
                               <tr key={worker} className="border-b border-gray-100">
                                 <td className="py-2 text-gray-900">{worker}</td>
                                 <td className="py-2 text-center text-gray-900">{total}</td>
                                 <td className="py-2 text-center text-amber-600">{attempts}</td>
                                 <td className="py-2 text-center text-green-600">{engagements}</td>
+                                <td className="py-2 text-center text-blue-600">{phoneEngagements}</td>
                                 <td className="py-2 text-center">
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                     rate >= 70 ? 'bg-green-100 text-green-700' :
@@ -1912,8 +1936,9 @@ export default function ReportsPage() {
 
                 const attempts = workerVisits.filter((v) => v.visit_outcome === "attempt");
                 const engagements = workerVisits.filter((v) => v.visit_outcome === "engagement");
+                const phoneEngagements = workerVisits.filter((v) => v.visit_outcome === "phone_engagement");
                 const engagementRate = workerVisits.length > 0
-                  ? Math.round((engagements.length / workerVisits.length) * 100)
+                  ? Math.round(((engagements.length + phoneEngagements.length) / workerVisits.length) * 100)
                   : 0;
 
                 // Get unique properties visited
@@ -1922,7 +1947,7 @@ export default function ReportsPage() {
                 return (
                   <div>
                     {/* Worker Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
                       <div className="bg-gray-50 rounded-lg p-4 text-center">
                         <p className="text-2xl font-bold text-gray-900">{workerVisits.length}</p>
                         <p className="text-sm text-gray-600">Total Visits</p>
@@ -1934,6 +1959,10 @@ export default function ReportsPage() {
                       <div className="bg-green-50 rounded-lg p-4 text-center">
                         <p className="text-2xl font-bold text-green-600">{engagements.length}</p>
                         <p className="text-sm text-green-700">Engagements</p>
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-blue-600">{phoneEngagements.length}</p>
+                        <p className="text-sm text-blue-700">Phone Visits</p>
                       </div>
                       <div className="bg-cyan-50 rounded-lg p-4 text-center">
                         <p className="text-2xl font-bold text-cyan-600">{engagementRate}%</p>
