@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Fetching visits for userId:', userId);
+
     const { data, error } = await supabaseAdmin
       .from('field_visits')
       .select('*')
@@ -27,6 +29,20 @@ export async function GET(request: NextRequest) {
         { error: 'Failed to fetch visits', details: error.message },
         { status: 500 }
       );
+    }
+
+    console.log(`Found ${data?.length || 0} visits for user ${userId}`);
+
+    // If no visits found, check if there are ANY visits to help debug
+    if (!data || data.length === 0) {
+      const { data: allVisits, error: allError } = await supabaseAdmin
+        .from('field_visits')
+        .select('id, staff_member')
+        .limit(5);
+
+      if (!allError && allVisits && allVisits.length > 0) {
+        console.log('Sample staff_member IDs in database:', allVisits.map(v => v.staff_member));
+      }
     }
 
     return NextResponse.json({ data }, { status: 200 });
