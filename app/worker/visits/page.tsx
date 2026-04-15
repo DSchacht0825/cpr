@@ -94,14 +94,10 @@ export default function WorkerVisitsPage() {
 
   const fetchVisits = async (userId: string) => {
     try {
-      console.log("Fetching visits for userId:", userId);
       const response = await fetch(`/api/worker/visits?userId=${userId}&limit=900`);
       const result = await response.json();
-      console.log("Visits API response:", result);
       if (response.ok) {
         setVisits(result.data || []);
-      } else {
-        console.error("Visits API error:", result);
       }
     } catch (err) {
       console.error("Failed to fetch visits:", err);
@@ -532,10 +528,6 @@ export default function WorkerVisitsPage() {
               + New Visit
             </Link>
           </div>
-          {/* Debug: Show user ID */}
-          {session && (
-            <p className="text-xs text-gray-400 mt-1">User ID: {session.user.id}</p>
-          )}
 
           {/* Search Bar */}
           <div className="relative">
